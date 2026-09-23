@@ -1,0 +1,41 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# 3D model downloads and generated assets
+test/.cache/
+test/outputs/
+test/generated/
+docs/*
+!docs/requirements/
+!docs/requirements/**
+!docs/architecture/
+!docs/architecture/**
+test/
+Step1X-3D-transfer/
+Step1X-3D-transfer-stalled/
+*.tar.gz
+*.obj
+*.mtl
+*.glb
+*.gltf
+*.ply
+*.fbx
+*.safetensors
+*.onnx
+*.log
+
+# Curated, optimized evidence assets shipped by the game
+!public/cases/**/evidence/*.glb
+
+# Local temporary files
+_note_draft.tmp
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
