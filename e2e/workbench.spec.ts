@@ -68,3 +68,20 @@ test('已发现线索可在档案中查阅来源与说明', async ({ page }) => 
   await expect(page.getByText(/来源物证 · 被移动过的桌子/)).toBeVisible()
   await expect(page.getByText('记录已核验')).toBeVisible()
 })
+
+test('已归档线索可形成中间推理结论', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+  await discoverDeskLegScrape(page)
+
+  await page.getByRole('button', { name: '推理' }).click()
+  const board = page.getByRole('region', { name: '证据链推理板' })
+  await expect(board).toBeVisible()
+  await board.getByRole('button', { name: /加入推理板/ }).click()
+  await board.getByRole('button', { name: '验证证据链' }).click()
+
+  await expect(
+    board.getByRole('heading', { name: '桌子近期被移动' }),
+  ).toBeVisible()
+  await expect(board.getByText('规则匹配 · 临时判断成立')).toBeVisible()
+})

@@ -24,6 +24,7 @@ import type { CaseBundle } from '../../cases/loader'
 import { evaluateHotspot } from '../../engine/hotspots/evaluate-hotspot'
 import { useGameStore } from '../../state/game-store'
 import { ClueArchive } from '../archive/ClueArchive'
+import { DeductionBoard } from '../deduction-board/DeductionBoard'
 import {
   EvidenceViewport,
   type CameraObservation,
@@ -37,7 +38,7 @@ type InvestigationWorkbenchProps = {
 }
 
 const initialCommand: ViewCommand = { sequence: 0, type: 'reset' }
-type WorkbenchSection = 'evidence' | 'archive'
+type WorkbenchSection = 'evidence' | 'archive' | 'deduction'
 
 export function InvestigationWorkbench({
   bundle,
@@ -225,7 +226,18 @@ export function InvestigationWorkbench({
             <Archive aria-hidden="true" size={17} />
             <span>{text('ui.navArchive')}</span>
           </button>
-          <button disabled type="button" title="证据归档后开放">
+          <button
+            className={
+              activeSection === 'deduction' ? styles.activeSection : undefined
+            }
+            disabled={discoveredClueIds.length === 0}
+            type="button"
+            aria-pressed={activeSection === 'deduction'}
+            title={
+              discoveredClueIds.length === 0 ? '发现线索后开放' : undefined
+            }
+            onClick={() => setActiveSection('deduction')}
+          >
             <FileText aria-hidden="true" size={17} />
             <span>{text('ui.navDeduction')}</span>
           </button>
@@ -409,6 +421,13 @@ export function InvestigationWorkbench({
         />
       </div>
 
+      <div
+        className={styles.archiveWorkspace}
+        hidden={activeSection !== 'deduction'}
+      >
+        <DeductionBoard bundle={bundle} />
+      </div>
+
       <footer className={styles.toolDock} hidden={activeSection !== 'evidence'}>
         <div className={styles.dockLabel}>
           <span>{text('ui.investigationTools')}</span>
@@ -433,9 +452,15 @@ export function InvestigationWorkbench({
       </footer>
       <footer
         className={styles.archiveDock}
-        hidden={activeSection !== 'archive'}
+        hidden={activeSection === 'evidence'}
       >
-        <span>{text('ui.archiveLocalOnly')}</span>
+        <span>
+          {text(
+            activeSection === 'deduction'
+              ? 'ui.deductionLocalOnly'
+              : 'ui.archiveLocalOnly',
+          )}
+        </span>
         <button type="button" onClick={() => setActiveSection('evidence')}>
           <ScanLine aria-hidden="true" size={16} />
           {text('ui.continueExamining')}

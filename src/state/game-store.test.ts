@@ -10,6 +10,8 @@ describe('game store', () => {
       currentEvidenceId: 'moved-desk',
       selectedTool: 'white-light',
       discoveredClueIds: [],
+      deductionNodeIds: [],
+      unlockedConclusionIds: [],
     })
   })
 
@@ -28,5 +30,17 @@ describe('game store', () => {
     expect(useGameStore.getState().discoveredClueIds).toEqual([
       'desk-leg-fresh-scrape',
     ])
+  })
+
+  it('保存推理节点和已解锁结论且去重', () => {
+    useGameStore.getState().addDeductionNode('desk-leg-fresh-scrape')
+    useGameStore.getState().addDeductionNode('desk-leg-fresh-scrape')
+    useGameStore.getState().unlockConclusion('desk-was-moved')
+    useGameStore.getState().unlockConclusion('desk-was-moved')
+
+    expect(useGameStore.getState()).toMatchObject({
+      deductionNodeIds: ['desk-leg-fresh-scrape'],
+      unlockedConclusionIds: ['desk-was-moved'],
+    })
   })
 })

@@ -99,11 +99,25 @@
       "evidenceId": "moved-desk",
       "titleKey": "clue.desk-leg-scrape.title",
       "descriptionKey": "clue.desk-leg-scrape.description"
+    },
+    {
+      "id": "desk-was-moved",
+      "kind": "conclusion",
+      "titleKey": "conclusion.desk-was-moved.title",
+      "descriptionKey": "conclusion.desk-was-moved.description"
     }
   ],
   "statements": [],
   "documents": [],
-  "deductions": [],
+  "deductions": [
+    {
+      "id": "desk-moved-rule",
+      "requiredNodes": ["desk-leg-fresh-scrape"],
+      "requiredRelations": [],
+      "unlocksConclusionId": "desk-was-moved",
+      "feedbackKey": "deduction.desk-moved.feedback"
+    }
+  ],
   "hints": [],
   "rating": {
     "baseScore": 1000,
