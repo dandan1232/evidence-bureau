@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "vanished-tenant",
+  "contentVersion": "0.1.0",
+  "defaultLocale": "zh-CN",
+  "supportedLocales": ["zh-CN"],
+  "metadata": {
+    "caseNumber": "EB-01-017",
+    "status": "open",
+    "estimatedMinutes": [25, 40],
+    "titleKey": "case.title",
+    "subtitleKey": "case.subtitle",
+    "locationKey": "case.location",
+    "summaryKey": "case.summary"
+  },
+  "evidence": [
+    {
+      "id": "moved-desk",
+      "modelUrl": "/cases/vanished-tenant/evidence/desk.glb",
+      "posterUrl": "/cases/vanished-tenant/images/desk-poster.webp",
+      "titleKey": "evidence.desk.title",
+      "descriptionKey": "evidence.desk.description",
+      "initialCamera": {
+        "position": [2.8, 1.8, 3.2],
+        "target": [0, 0.7, 0],
+        "fov": 42
+      },
+      "cameraLimits": {
+        "minDistance": 1.2,
+        "maxDistance": 7,
+        "minPolarAngleDeg": 15,
+        "maxPolarAngleDeg": 165
+      },
+      "hotspots": [],
+      "assetBudget": { "maxBytes": 12582912, "maxTriangles": 180000 }
+    },
+    {
+      "id": "damaged-camera",
+      "modelUrl": "/cases/vanished-tenant/evidence/camera.glb",
+      "posterUrl": "/cases/vanished-tenant/images/camera-poster.webp",
+      "titleKey": "evidence.camera.title",
+      "descriptionKey": "evidence.camera.description",
+      "initialCamera": {
+        "position": [2.4, 1.4, 2.6],
+        "target": [0, 0.3, 0],
+        "fov": 38
+      },
+      "cameraLimits": {
+        "minDistance": 0.8,
+        "maxDistance": 5,
+        "minPolarAngleDeg": 10,
+        "maxPolarAngleDeg": 170
+      },
+      "hotspots": [],
+      "assetBudget": { "maxBytes": 10485760, "maxTriangles": 150000 }
+    },
+    {
+      "id": "brass-key",
+      "modelUrl": "/cases/vanished-tenant/evidence/brass-key.glb",
+      "posterUrl": "/cases/vanished-tenant/images/brass-key-poster.webp",
+      "titleKey": "evidence.key.title",
+      "descriptionKey": "evidence.key.description",
+      "initialCamera": {
+        "position": [1.8, 1.1, 2.1],
+        "target": [0, 0, 0],
+        "fov": 34
+      },
+      "cameraLimits": {
+        "minDistance": 0.5,
+        "maxDistance": 4,
+        "minPolarAngleDeg": 5,
+        "maxPolarAngleDeg": 175
+      },
+      "hotspots": [],
+      "assetBudget": { "maxBytes": 6291456, "maxTriangles": 80000 }
+    }
+  ],
+  "clues": [],
+  "statements": [],
+  "documents": [],
+  "deductions": [],
+  "hints": [],
+  "rating": {
+    "baseScore": 1000,
+    "grades": [
+      { "grade": "S", "minScore": 900 },
+      { "grade": "A", "minScore": 750 },
+      { "grade": "B", "minScore": 550 },
+      { "grade": "C", "minScore": 0 }
+    ],
+    "penalties": {
+      "perHintLevel": 45,
+      "perFailedSubmission": 80,
+      "perMinuteOverTarget": 5
+    }
+  },
+  "ending": {
+    "titleKey": "ending.title",
+    "summaryKey": "ending.summary",
+    "epilogueKey": "ending.epilogue"
+  }
+}

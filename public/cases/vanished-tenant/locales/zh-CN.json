@@ -1,0 +1,15 @@
+{
+  "case.title": "消失的住客",
+  "case.subtitle": "一间从内部锁住的客房，一名没有离开记录的住客。",
+  "case.location": "临江旅馆 · 407 号客房",
+  "case.summary": "走廊监控没有记录任何人离开，窗户也无法通行。现场的桌子、旧相机和黄铜钥匙却与旅馆提交的记录相互矛盾。请复核三件物证，还原住客消失的方式。",
+  "evidence.desk.title": "被移动过的桌子",
+  "evidence.desk.description": "来自 407 号客房北墙。桌腿、桌板与地面的痕迹需要复核。",
+  "evidence.camera.title": "损坏的旧相机",
+  "evidence.camera.description": "在床头柜内发现。快门机构卡死，机械计数器仍可辨认。",
+  "evidence.key.title": "黄铜钥匙",
+  "evidence.key.description": "从桌板下方取得，与客房门锁制式不符。",
+  "ending.title": "通道仍然存在",
+  "ending.summary": "住客利用被桌子遮盖的检修通道离开，并借相机制造了错误的时间线。",
+  "ending.epilogue": "他解释了自己如何消失，却没有留下是谁在监视他的答案。"
+}
