@@ -14,7 +14,10 @@ const LocaleIdSchema = z
   .string()
   .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/, '语言代码格式无效')
 
-type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+type Fetcher = (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) => Promise<Response>
 
 export type CaseBundle = {
   caseDefinition: CaseDefinition

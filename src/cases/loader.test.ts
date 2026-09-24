@@ -24,7 +24,9 @@ describe('loadCase', () => {
   it('在发出请求前拦截危险案件 ID', async () => {
     const fetcher = vi.fn<typeof fetch>()
 
-    await expect(loadCase('../private', 'zh-CN', fetcher)).rejects.toMatchObject({
+    await expect(
+      loadCase('../private', 'zh-CN', fetcher),
+    ).rejects.toMatchObject({
       code: 'invalid-request',
     } satisfies Partial<CaseLoadError>)
     expect(fetcher).not.toHaveBeenCalled()
@@ -37,6 +39,8 @@ describe('loadCase', () => {
 
     await expect(
       loadCase('vanished-tenant', 'zh-CN', fetcher),
-    ).rejects.toMatchObject({ code: 'not-found' } satisfies Partial<CaseLoadError>)
+    ).rejects.toMatchObject({
+      code: 'not-found',
+    } satisfies Partial<CaseLoadError>)
   })
 })

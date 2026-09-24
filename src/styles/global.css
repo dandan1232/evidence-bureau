@@ -1,19 +1,27 @@
 :root {
-  color: #d7d8d5;
-  background: #111315;
+  color: oklch(0.86 0.005 260);
+  background: oklch(0.105 0 0);
   font-family:
     'IBM Plex Sans SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --color-background: #111315;
-  --color-surface: #191c1e;
-  --color-border: #373b3d;
-  --color-text-strong: #f0f0eb;
-  --color-text-muted: #9da3a3;
-  --color-primary: #a33c4f;
-  --color-accent: #9aaeb7;
+  --color-background: oklch(0.105 0 0);
+  --color-surface: oklch(0.155 0.006 260);
+  --color-surface-raised: oklch(0.205 0.008 260);
+  --color-border: oklch(0.31 0.009 260);
+  --color-border-strong: oklch(0.4 0.012 260);
+  --color-text: oklch(0.86 0.005 260);
+  --color-text-strong: oklch(0.93 0.006 260);
+  --color-text-muted: oklch(0.68 0.012 260);
+  --color-text-subtle: oklch(0.53 0.012 260);
+  --color-primary: oklch(0.56 0.17 353.2);
+  --color-primary-strong: oklch(0.48 0.19 353.2);
+  --color-primary-light: oklch(0.74 0.12 353.2);
+  --color-accent: oklch(0.72 0.055 235);
+  --color-success: oklch(0.72 0.1 152);
   --font-mono: 'IBM Plex Mono', 'Cascadia Mono', monospace;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -29,10 +37,7 @@ body {
   min-width: 20rem;
   min-height: 100vh;
   margin: 0;
-  background:
-    linear-gradient(90deg, rgb(255 255 255 / 0.018) 1px, transparent 1px) 0 0 /
-      4rem 4rem,
-    var(--color-background);
+  background: var(--color-background);
 }
 
 button,

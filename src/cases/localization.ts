@@ -10,7 +10,9 @@ export class LocalizationValidationError extends Error {
   readonly missingKeys: string[]
 
   constructor(missingKeys: string[]) {
-    super(`语言文件缺少 ${missingKeys.length} 个文案键：${missingKeys.join(', ')}`)
+    super(
+      `语言文件缺少 ${missingKeys.length} 个文案键：${missingKeys.join(', ')}`,
+    )
     this.name = 'LocalizationValidationError'
     this.missingKeys = missingKeys
   }

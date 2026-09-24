@@ -1,6 +1,11 @@
 node_modules
 dist
 coverage
+pnpm-lock.yaml
 Step1X-3D-transfer
 Step1X-3D-transfer-stalled
 test
+docs
+PRODUCT.md
+DESIGN.md
+.impeccable.md

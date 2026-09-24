@@ -4,10 +4,7 @@ const idSchema = z
   .string()
   .min(1)
   .max(80)
-  .regex(
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    'ID 只能使用小写字母、数字和连字符',
-  )
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'ID 只能使用小写字母、数字和连字符')
 
 const localeSchema = z
   .string()
@@ -49,13 +46,10 @@ export const CameraLimitsSchema = z
     message: '最大相机距离必须大于最小距离',
     path: ['maxDistance'],
   })
-  .refine(
-    (limits) => limits.maxPolarAngleDeg > limits.minPolarAngleDeg,
-    {
-      message: '最大极角必须大于最小极角',
-      path: ['maxPolarAngleDeg'],
-    },
-  )
+  .refine((limits) => limits.maxPolarAngleDeg > limits.minPolarAngleDeg, {
+    message: '最大极角必须大于最小极角',
+    path: ['maxPolarAngleDeg'],
+  })
 
 const HotspotShapeSchema = z.discriminatedUnion('type', [
   z.object({
@@ -219,7 +213,9 @@ export const CaseDefinitionSchema = z
     }),
   })
   .superRefine((caseDefinition, context) => {
-    if (!caseDefinition.supportedLocales.includes(caseDefinition.defaultLocale)) {
+    if (
+      !caseDefinition.supportedLocales.includes(caseDefinition.defaultLocale)
+    ) {
       context.addIssue({
         code: 'custom',
         message: '默认语言必须包含在 supportedLocales 中',
@@ -246,7 +242,12 @@ export const CaseDefinitionSchema = z
     const hotspotIds = new Set<string>()
     caseDefinition.evidence.forEach((evidence, evidenceIndex) => {
       evidence.hotspots.forEach((hotspot, hotspotIndex) => {
-        const hotspotPath = ['evidence', evidenceIndex, 'hotspots', hotspotIndex]
+        const hotspotPath = [
+          'evidence',
+          evidenceIndex,
+          'hotspots',
+          hotspotIndex,
+        ]
         if (hotspotIds.has(hotspot.id)) {
           context.addIssue({
             code: 'custom',

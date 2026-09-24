@@ -52,8 +52,12 @@ describe('localization validation', () => {
   const caseDefinition = CaseDefinitionSchema.parse(caseJson)
 
   it('确认中文语言包覆盖所有案件文案键', () => {
-    expect(findMissingLocalizationKeys(caseDefinition, messagesJson)).toEqual([])
-    expect(validateLocalization(caseDefinition, messagesJson)).toBe(messagesJson)
+    expect(findMissingLocalizationKeys(caseDefinition, messagesJson)).toEqual(
+      [],
+    )
+    expect(validateLocalization(caseDefinition, messagesJson)).toBe(
+      messagesJson,
+    )
   })
 
   it('报告缺失的文案键', () => {
@@ -62,8 +66,8 @@ describe('localization validation', () => {
     expect(() =>
       validateLocalization(caseDefinition, incompleteMessages),
     ).toThrow(LocalizationValidationError)
-    expect(findMissingLocalizationKeys(caseDefinition, incompleteMessages)).toEqual([
-      'case.title',
-    ])
+    expect(
+      findMissingLocalizationKeys(caseDefinition, incompleteMessages),
+    ).toEqual(['case.title'])
   })
 })
