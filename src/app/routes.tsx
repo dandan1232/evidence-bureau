@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
 import { CaseBriefingPage } from '../features/briefing/CaseBriefingPage'
+import { CaseDebrief } from '../features/debrief/CaseDebrief'
 import styles from './App.module.css'
 import { useCaseBundle } from './use-case-bundle'
 
@@ -24,9 +25,33 @@ export function AppRoutes() {
         path="/cases/:caseId/investigation"
         element={<InvestigationRoute />}
       />
+      <Route path="/cases/:caseId/debrief" element={<DebriefRoute />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
+}
+
+function DebriefRoute() {
+  const { caseId = '' } = useParams()
+  const { state, retry } = useCaseBundle(caseId)
+
+  if (state.status === 'loading') {
+    return (
+      <StatusPage title="正在生成结案报告" detail="封存证据链与评级记录…" />
+    )
+  }
+
+  if (state.status === 'error') {
+    return (
+      <StatusPage
+        title="结案报告暂时无法打开"
+        detail={state.message}
+        onRetry={retry}
+      />
+    )
+  }
+
+  return <CaseDebrief bundle={state.bundle} />
 }
 
 function CaseBriefingRoute() {

@@ -8,6 +8,10 @@ const idSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, '存档包含无效 ID')
 
 export const SavedProgressSchema = z.object({
+  startedAt: z
+    .string()
+    .datetime()
+    .default(() => new Date().toISOString()),
   currentEvidenceId: idSchema,
   selectedTool: ToolIdSchema,
   discoveredClueIds: z.array(idSchema),
@@ -22,6 +26,22 @@ export const SavedProgressSchema = z.object({
     )
     .default([]),
   unlockedConclusionIds: z.array(idSchema),
+  viewedHintLevels: z
+    .record(idSchema, z.number().int().min(0).max(3))
+    .default({}),
+  failedSubmissions: z.number().int().nonnegative().default(0),
+  completedAt: z.string().datetime().optional(),
+  rating: z
+    .object({
+      score: z.number().int().nonnegative(),
+      grade: z.enum(['S', 'A', 'B', 'C']),
+      discoveredClues: z.number().int().nonnegative(),
+      totalClues: z.number().int().nonnegative(),
+      viewedHintLevels: z.number().int().nonnegative(),
+      failedSubmissions: z.number().int().nonnegative(),
+      elapsedMinutes: z.number().int().nonnegative(),
+    })
+    .optional(),
 })
 
 export const SaveEnvelopeSchema = z.object({

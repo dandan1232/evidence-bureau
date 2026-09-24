@@ -1,0 +1,198 @@
+.panel {
+  min-height: 100%;
+  overflow: auto;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  background:
+    linear-gradient(rgb(255 255 255 / 0.018) 1px, transparent 1px) 0 0 / 3rem
+      3rem,
+    var(--color-background);
+}
+
+.heading {
+  display: grid;
+  align-items: start;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  gap: 1rem;
+}
+
+.headingIcon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+  place-items: center;
+}
+
+.heading p,
+.heading > strong,
+.hintIdentity > span,
+.hintIdentity small,
+.levels span {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heading p {
+  margin: 0 0 0.4rem;
+  color: var(--color-warning);
+}
+
+.heading h1 {
+  margin: 0;
+  color: var(--color-text-strong);
+  font-size: clamp(1.7rem, 3vw, 2.6rem);
+  font-weight: 560;
+  letter-spacing: -0.035em;
+}
+
+.heading div > span {
+  display: block;
+  max-width: 48rem;
+  margin-top: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.heading > strong {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.hintList {
+  display: grid;
+  max-width: 72rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+  gap: 1px;
+  background: var(--color-border);
+}
+
+.hintList > li {
+  padding: clamp(1.1rem, 2.5vw, 1.75rem);
+  background: var(--color-surface);
+}
+
+.hintList > li.resolved {
+  background: color-mix(
+    in oklch,
+    var(--color-success) 5%,
+    var(--color-surface)
+  );
+}
+
+.hintIdentity {
+  display: grid;
+  align-items: start;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  gap: 0.8rem;
+}
+
+.hintIdentity > span {
+  color: var(--color-text-subtle);
+}
+
+.hintIdentity small {
+  color: var(--color-accent);
+}
+
+.hintIdentity h2 {
+  margin: 0.3rem 0 0;
+  color: var(--color-text-strong);
+  font-size: 1rem;
+  font-weight: 560;
+}
+
+.hintIdentity > svg {
+  color: var(--color-text-subtle);
+}
+
+.resolved .hintIdentity > svg {
+  color: var(--color-success);
+}
+
+.levels {
+  display: grid;
+  margin: 1.2rem 0 0 2.8rem;
+  padding: 0;
+  list-style: none;
+  gap: 0.65rem;
+}
+
+.levels li {
+  display: grid;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--color-border);
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.levels span {
+  color: var(--color-warning);
+}
+
+.levels p,
+.unrevealed {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+.unrevealed {
+  margin: 1.2rem 0 0 2.8rem;
+}
+
+.hintList button {
+  min-height: 2.5rem;
+  margin: 1rem 0 0 2.8rem;
+  padding-inline: 0.85rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.2rem;
+  color: var(--color-text-strong);
+  background: var(--color-surface-raised);
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.hintList button:hover:not(:disabled) {
+  border-color: var(--color-warning);
+}
+
+.hintList button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 49.99rem) {
+  .heading {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+  }
+
+  .heading > strong {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .levels {
+    margin-left: 0;
+  }
+
+  .levels li {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .hintList button,
+  .unrevealed {
+    margin-left: 0;
+  }
+}

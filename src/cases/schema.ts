@@ -180,6 +180,10 @@ export const RatingDefinitionSchema = z.object({
   }),
 })
 
+export const FinalDeductionSchema = DeductionRuleSchema.extend({
+  requiredNodes: z.array(idSchema).min(3),
+})
+
 export const CaseDefinitionSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -204,12 +208,14 @@ export const CaseDefinitionSchema = z
     statements: z.array(StatementDefinitionSchema),
     documents: z.array(DocumentDefinitionSchema),
     deductions: z.array(DeductionRuleSchema),
+    finalDeduction: FinalDeductionSchema,
     hints: z.array(HintDefinitionSchema),
     rating: RatingDefinitionSchema,
     ending: z.object({
       titleKey: localizationKeySchema,
       summaryKey: localizationKeySchema,
       epilogueKey: localizationKeySchema,
+      appendixKey: localizationKeySchema,
     }),
   })
   .superRefine((caseDefinition, context) => {
@@ -282,6 +288,17 @@ export const CaseDefinitionSchema = z
         addUnknownReference(context, ['deductions', ruleIndex])
       }
     })
+
+    const finalRuleNodes = [
+      ...caseDefinition.finalDeduction.requiredNodes,
+      caseDefinition.finalDeduction.unlocksConclusionId,
+      ...caseDefinition.finalDeduction.requiredRelations.flatMap(
+        ({ from, to }) => [from, to],
+      ),
+    ]
+    if (finalRuleNodes.some((nodeId) => !clueIds.has(nodeId))) {
+      addUnknownReference(context, ['finalDeduction'])
+    }
 
     caseDefinition.hints.forEach((hint, hintIndex) => {
       if (!clueIds.has(hint.targetId)) {

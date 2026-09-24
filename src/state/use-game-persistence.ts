@@ -23,30 +23,38 @@ export function useGamePersistence(caseId: string, caseContentVersion: string) {
     }
 
     let timeoutId: number | undefined
-    const unsubscribe = useGameStore.subscribe((state) => {
+    const persist = () => {
+      const state = useGameStore.getState()
+      const progress: SavedProgress = {
+        startedAt: state.startedAt,
+        currentEvidenceId: state.currentEvidenceId,
+        selectedTool: state.selectedTool,
+        discoveredClueIds: state.discoveredClueIds,
+        deductionNodeIds: state.deductionNodeIds,
+        deductionRelations: state.deductionRelations,
+        unlockedConclusionIds: state.unlockedConclusionIds,
+        viewedHintLevels: state.viewedHintLevels,
+        failedSubmissions: state.failedSubmissions,
+        completedAt: state.completedAt,
+        rating: state.rating,
+      }
+      const result = saveCaseProgress(
+        localStorage,
+        caseId,
+        caseContentVersion,
+        progress,
+      )
+      setStatus(result.ok ? 'saved' : 'error')
+    }
+    const unsubscribe = useGameStore.subscribe(() => {
       window.clearTimeout(timeoutId)
       setStatus('saving')
-      timeoutId = window.setTimeout(() => {
-        const progress: SavedProgress = {
-          currentEvidenceId: state.currentEvidenceId,
-          selectedTool: state.selectedTool,
-          discoveredClueIds: state.discoveredClueIds,
-          deductionNodeIds: state.deductionNodeIds,
-          deductionRelations: state.deductionRelations,
-          unlockedConclusionIds: state.unlockedConclusionIds,
-        }
-        const result = saveCaseProgress(
-          localStorage,
-          caseId,
-          caseContentVersion,
-          progress,
-        )
-        setStatus(result.ok ? 'saved' : 'error')
-      }, 180)
+      timeoutId = window.setTimeout(persist, 180)
     })
 
     return () => {
       window.clearTimeout(timeoutId)
+      persist()
       unsubscribe()
     }
   }, [caseContentVersion, caseId, initialLoad])

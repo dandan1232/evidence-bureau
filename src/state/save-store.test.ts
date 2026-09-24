@@ -9,12 +9,15 @@ import {
 } from './save-store'
 
 const progress: SavedProgress = {
+  startedAt: '2026-09-24T02:00:00.000Z',
   currentEvidenceId: 'moved-desk',
   selectedTool: 'side-light',
   discoveredClueIds: ['desk-leg-fresh-scrape'],
   deductionNodeIds: ['desk-leg-fresh-scrape'],
   deductionRelations: [],
   unlockedConclusionIds: ['desk-was-moved'],
+  viewedHintLevels: { 'desk-chain-hint': 1 },
+  failedSubmissions: 0,
 }
 
 describe('case save store', () => {
@@ -62,6 +65,8 @@ describe('case save store', () => {
     const key = caseSaveKey('vanished-tenant')
     const legacyProgress: Record<string, unknown> = { ...progress }
     delete legacyProgress.deductionRelations
+    delete legacyProgress.viewedHintLevels
+    delete legacyProgress.failedSubmissions
     storage.setItem(
       key,
       JSON.stringify({

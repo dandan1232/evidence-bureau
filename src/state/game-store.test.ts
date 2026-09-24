@@ -13,6 +13,19 @@ describe('game store', () => {
       deductionNodeIds: [],
       deductionRelations: [],
       unlockedConclusionIds: [],
+      viewedHintLevels: {},
+      failedSubmissions: 0,
+    })
+  })
+
+  it('逐级记录提示并累计错误结案次数', () => {
+    useGameStore.getState().revealNextHint('desk-chain-hint')
+    useGameStore.getState().revealNextHint('desk-chain-hint')
+    useGameStore.getState().recordFailedSubmission()
+
+    expect(useGameStore.getState()).toMatchObject({
+      viewedHintLevels: { 'desk-chain-hint': 2 },
+      failedSubmissions: 1,
     })
   })
 

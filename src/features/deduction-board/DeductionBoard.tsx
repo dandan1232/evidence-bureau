@@ -8,6 +8,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
@@ -15,6 +16,8 @@ import {
   evaluateDeduction,
   type DeductionRelation,
 } from '../../engine/deduction/evaluate-deduction'
+import { countViewedHintLevels } from '../../engine/hints/hint-progress'
+import { calculateRating } from '../../engine/rating/calculate-rating'
 import { useGameStore } from '../../state/game-store'
 import styles from './DeductionBoard.module.css'
 
@@ -24,6 +27,7 @@ type DeductionBoardProps = {
 
 export function DeductionBoard({ bundle }: DeductionBoardProps) {
   const { caseDefinition, messages } = bundle
+  const navigate = useNavigate()
   const discoveredClueIds = useGameStore((state) => state.discoveredClueIds)
   const deductionNodeIds = useGameStore((state) => state.deductionNodeIds)
   const deductionRelations = useGameStore((state) => state.deductionRelations)
@@ -38,10 +42,22 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
     (state) => state.removeDeductionRelation,
   )
   const unlockConclusion = useGameStore((state) => state.unlockConclusion)
+  const viewedHintLevels = useGameStore((state) => state.viewedHintLevels)
+  const failedSubmissions = useGameStore((state) => state.failedSubmissions)
+  const startedAt = useGameStore((state) => state.startedAt)
+  const recordFailedSubmission = useGameStore(
+    (state) => state.recordFailedSubmission,
+  )
+  const completeCase = useGameStore((state) => state.completeCase)
+  const rating = useGameStore((state) => state.rating)
   const [feedback, setFeedback] = useState<'idle' | 'incomplete' | 'matched'>(
     'idle',
   )
   const [matchedCount, setMatchedCount] = useState(0)
+  const [finalFeedback, setFinalFeedback] = useState<'idle' | 'incomplete'>(
+    'idle',
+  )
+  const [confirmingSubmission, setConfirmingSubmission] = useState(false)
   const [relationFrom, setRelationFrom] = useState('')
   const [relationTo, setRelationTo] = useState('')
   const [relationKind, setRelationKind] =
@@ -59,6 +75,21 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
       caseDefinition.clues.find(({ id }) => id === rule.unlocksConclusionId),
     )
     .filter((conclusion) => conclusion !== undefined)
+  const unlockedConclusions = conclusions.filter(({ id }) =>
+    unlockedConclusionIds.includes(id),
+  )
+  const relationNodes = [...placedClues, ...unlockedConclusions]
+  const finalConclusion = caseDefinition.clues.find(
+    ({ id }) => id === caseDefinition.finalDeduction.unlocksConclusionId,
+  )
+  const allIntermediateConclusionsUnlocked =
+    caseDefinition.finalDeduction.requiredNodes.every((nodeId) =>
+      unlockedConclusionIds.includes(nodeId),
+    )
+  const finalEvaluation = evaluateDeduction(caseDefinition.finalDeduction, {
+    nodeIds: unlockedConclusionIds,
+    relations: deductionRelations,
+  })
 
   const verifyChain = () => {
     const matchedConclusionIds = caseDefinition.deductions.flatMap((rule) => {
@@ -128,6 +159,32 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
   const clueTitle = (clueId: string) => {
     const clue = caseDefinition.clues.find(({ id }) => id === clueId)
     return clue ? text(clue.titleKey) : clueId
+  }
+
+  const submitFinalChain = () => {
+    setConfirmingSubmission(false)
+    if (finalEvaluation.status !== 'matched') {
+      recordFailedSubmission()
+      setFinalFeedback('incomplete')
+      return
+    }
+
+    const observationCount = caseDefinition.clues.filter(
+      ({ kind }) => kind === 'observation',
+    ).length
+    const elapsedMinutes =
+      (Date.now() - new Date(startedAt).getTime()) / (60 * 1000)
+    const rating = calculateRating(caseDefinition.rating, {
+      discoveredClueCount: discoveredClueIds.length,
+      totalClueCount: observationCount,
+      viewedHintLevelCount: countViewedHintLevels(viewedHintLevels),
+      failedSubmissions,
+      elapsedMinutes,
+      targetMinutes: caseDefinition.metadata.estimatedMinutes[1],
+    })
+    unlockConclusion(caseDefinition.finalDeduction.unlocksConclusionId)
+    completeCase(rating)
+    void navigate(`/cases/${caseDefinition.id}/debrief`)
   }
 
   const relationLabel = (kind: DeductionRelation['kind']) => {
@@ -223,7 +280,7 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
                   onChange={(event) => setRelationFrom(event.target.value)}
                 >
                   <option value="">{text('ui.selectNode')}</option>
-                  {placedClues.map((clue) => (
+                  {relationNodes.map((clue) => (
                     <option key={clue.id} value={clue.id}>
                       {text(clue.titleKey)}
                     </option>
@@ -254,7 +311,7 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
                   onChange={(event) => setRelationTo(event.target.value)}
                 >
                   <option value="">{text('ui.selectNode')}</option>
-                  {placedClues.map((clue) => (
+                  {relationNodes.map((clue) => (
                     <option key={clue.id} value={clue.id}>
                       {text(clue.titleKey)}
                     </option>
@@ -349,6 +406,93 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
               {text('ui.verifyChain')}
             </button>
           </footer>
+
+          <section
+            className={styles.finalChain}
+            aria-labelledby="final-chain-title"
+          >
+            <div>
+              <span>03 / CASE CLOSURE</span>
+              <h2 id="final-chain-title">{text('ui.finalChainTitle')}</h2>
+              <p>{text('ui.finalChainDescription')}</p>
+            </div>
+            <div className={styles.finalNodes}>
+              {conclusions.map((conclusion) => (
+                <span
+                  className={
+                    isConclusionUnlocked(conclusion.id)
+                      ? styles.finalNodeReady
+                      : undefined
+                  }
+                  key={conclusion.id}
+                >
+                  {isConclusionUnlocked(conclusion.id)
+                    ? text(conclusion.titleKey)
+                    : '待验证'}
+                </span>
+              ))}
+              <ArrowRight aria-hidden="true" size={18} />
+              <strong>
+                {finalEvaluation.status === 'matched' && finalConclusion
+                  ? text(finalConclusion.titleKey)
+                  : '最终结论待封存'}
+              </strong>
+            </div>
+            <p className={styles.finalStatus} role="status">
+              {!allIntermediateConclusionsUnlocked
+                ? text('ui.finalChainLocked')
+                : finalEvaluation.status === 'matched'
+                  ? text('ui.finalChainReady')
+                  : finalFeedback === 'incomplete'
+                    ? text('ui.finalChainIncomplete')
+                    : text('ui.finalChainDescription')}
+            </p>
+            {rating ? (
+              <button
+                className={styles.submitButton}
+                type="button"
+                onClick={() =>
+                  void navigate(`/cases/${caseDefinition.id}/debrief`)
+                }
+              >
+                <ShieldCheck aria-hidden="true" size={17} />
+                {text('ui.viewDebrief')}
+              </button>
+            ) : confirmingSubmission ? (
+              <div
+                className={styles.confirmation}
+                role="alertdialog"
+                aria-labelledby="case-submit-title"
+              >
+                <div>
+                  <strong id="case-submit-title">
+                    {text('ui.confirmCaseTitle')}
+                  </strong>
+                  <p>{text('ui.confirmCaseDescription')}</p>
+                </div>
+                <button type="button" onClick={submitFinalChain}>
+                  {text('ui.confirmSubmit')}
+                </button>
+                <button
+                  className={styles.cancelButton}
+                  type="button"
+                  onClick={() => setConfirmingSubmission(false)}
+                >
+                  {text('ui.cancelSubmit')}
+                </button>
+              </div>
+            ) : (
+              <button
+                className={styles.submitButton}
+                disabled={!allIntermediateConclusionsUnlocked}
+                type="button"
+                onClick={() => setConfirmingSubmission(true)}
+              >
+                <ShieldCheck aria-hidden="true" size={17} />
+                {text('ui.submitCase')}
+              </button>
+            )}
+          </section>
         </section>
       </div>
     </section>

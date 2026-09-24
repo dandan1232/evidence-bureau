@@ -372,6 +372,12 @@
       "kind": "conclusion",
       "titleKey": "conclusion.key-maintenance-access.title",
       "descriptionKey": "conclusion.key-maintenance-access.description"
+    },
+    {
+      "id": "tenant-used-maintenance-shaft",
+      "kind": "conclusion",
+      "titleKey": "conclusion.escape-route.title",
+      "descriptionKey": "conclusion.escape-route.description"
     }
   ],
   "statements": [
@@ -458,7 +464,45 @@
       "feedbackKey": "deduction.key-maintenance-access.feedback"
     }
   ],
-  "hints": [],
+  "finalDeduction": {
+    "id": "maintenance-shaft-escape-rule",
+    "requiredNodes": [
+      "desk-was-moved",
+      "camera-timeline-was-staged",
+      "key-opens-maintenance-access"
+    ],
+    "requiredRelations": [
+      {
+        "from": "key-opens-maintenance-access",
+        "to": "desk-was-moved",
+        "kind": "explains"
+      },
+      {
+        "from": "desk-was-moved",
+        "to": "camera-timeline-was-staged",
+        "kind": "precedes"
+      }
+    ],
+    "unlocksConclusionId": "tenant-used-maintenance-shaft",
+    "feedbackKey": "deduction.escape-route.feedback"
+  },
+  "hints": [
+    {
+      "id": "desk-chain-hint",
+      "targetId": "desk-was-moved",
+      "levelKeys": ["hint.desk.1", "hint.desk.2", "hint.desk.3"]
+    },
+    {
+      "id": "camera-chain-hint",
+      "targetId": "camera-timeline-was-staged",
+      "levelKeys": ["hint.camera.1", "hint.camera.2", "hint.camera.3"]
+    },
+    {
+      "id": "key-chain-hint",
+      "targetId": "key-opens-maintenance-access",
+      "levelKeys": ["hint.key.1", "hint.key.2", "hint.key.3"]
+    }
+  ],
   "rating": {
     "baseScore": 1000,
     "grades": [
@@ -476,6 +520,7 @@
   "ending": {
     "titleKey": "ending.title",
     "summaryKey": "ending.summary",
-    "epilogueKey": "ending.epilogue"
+    "epilogueKey": "ending.epilogue",
+    "appendixKey": "ending.appendix"
   }
 }

@@ -328,3 +328,143 @@ test('生产构建不能通过 URL 打开热点标注模式', async ({ page }) =
     0,
   )
 })
+
+test('提示由玩家逐级申请并在刷新后恢复', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await page.getByRole('button', { name: '提示' }).click()
+
+  const panel = page.getByRole('region', { name: '分级调查提示' })
+  await panel
+    .getByRole('button', { name: /查看下一级提示 · 1\/3/ })
+    .first()
+    .click()
+  await expect(
+    panel.getByText('先核对北墙附近的桌子是否真的一直没有移动。'),
+  ).toBeVisible()
+  await expect(panel.getByText(/已查看提示级数 \/ 01/)).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = localStorage.getItem('evidence-bureau:save:vanished-tenant')
+        if (!raw) return 0
+        const save = JSON.parse(raw) as {
+          payload?: { viewedHintLevels?: Record<string, number> }
+        }
+        return save.payload?.viewedHintLevels?.['desk-chain-hint'] ?? 0
+      }),
+    )
+    .toBe(1)
+
+  await page.reload()
+  await page.getByRole('button', { name: '提示' }).click()
+  await expect(
+    page.getByText('先核对北墙附近的桌子是否真的一直没有移动。'),
+  ).toBeVisible()
+})
+
+test('最终证据链生成评级与可恢复的结案报告', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await page.evaluate(() => {
+    const startedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+    localStorage.setItem(
+      'evidence-bureau:save:vanished-tenant',
+      JSON.stringify({
+        saveSchemaVersion: 1,
+        savedAt: new Date().toISOString(),
+        caseId: 'vanished-tenant',
+        caseContentVersion: '0.1.0',
+        payload: {
+          startedAt,
+          currentEvidenceId: 'moved-desk',
+          selectedTool: 'white-light',
+          discoveredClueIds: [
+            'desk-leg-fresh-scrape',
+            'desk-access-clearance',
+            'camera-erased-delay-mark',
+            'camera-timer-spring-tension',
+            'key-hidden-facility-number',
+            'key-lock-profile-mismatch',
+          ],
+          deductionNodeIds: [
+            'desk-leg-fresh-scrape',
+            'desk-access-clearance',
+            'camera-erased-delay-mark',
+            'camera-timer-spring-tension',
+            'key-hidden-facility-number',
+            'key-lock-profile-mismatch',
+          ],
+          deductionRelations: [
+            {
+              from: 'desk-leg-fresh-scrape',
+              to: 'desk-access-clearance',
+              kind: 'supports',
+            },
+            {
+              from: 'camera-erased-delay-mark',
+              to: 'camera-timer-spring-tension',
+              kind: 'explains',
+            },
+            {
+              from: 'key-hidden-facility-number',
+              to: 'key-lock-profile-mismatch',
+              kind: 'locates',
+            },
+          ],
+          unlockedConclusionIds: [
+            'desk-was-moved',
+            'camera-timeline-was-staged',
+            'key-opens-maintenance-access',
+          ],
+          viewedHintLevels: { 'desk-chain-hint': 1 },
+          failedSubmissions: 0,
+        },
+      }),
+    )
+  })
+  await page.reload()
+  await page.getByRole('button', { name: '推理' }).click()
+
+  const board = page.getByRole('region', { name: '证据链推理板' })
+  const finalRelations = [
+    {
+      from: '钥匙属于检修设施',
+      kind: '解释',
+      to: '桌子近期被移动',
+    },
+    {
+      from: '桌子近期被移动',
+      kind: '时间先于',
+      to: '相机制造了错误时间线',
+    },
+  ]
+
+  for (const relation of finalRelations) {
+    await board
+      .getByRole('combobox', { name: '起点证据' })
+      .selectOption({ label: relation.from })
+    await board
+      .getByRole('combobox', { name: '关系类型' })
+      .selectOption({ label: relation.kind })
+    await board
+      .getByRole('combobox', { name: '终点证据' })
+      .selectOption({ label: relation.to })
+    await board.getByRole('button', { name: '添加关系' }).click()
+  }
+
+  await expect(
+    board.getByText('结案条件已满足，可以提交最终证据链。'),
+  ).toBeVisible()
+  await board.getByRole('button', { name: '提交结案' }).click()
+  await expect(board.getByRole('alertdialog')).toBeVisible()
+  await board.getByRole('button', { name: '确认结案' }).click()
+
+  await expect(page).toHaveURL(/\/debrief$/)
+  await expect(
+    page.getByRole('heading', { name: '通道仍然存在' }),
+  ).toBeVisible()
+  await expect(page.getByLabel('调查评级 A')).toBeVisible()
+  await expect(page.getByText('高完整度调查已解锁后续档案。')).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByLabel('调查评级 A')).toBeVisible()
+})
