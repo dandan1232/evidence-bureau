@@ -34,6 +34,14 @@ Step1X-3D-transfer-stalled/
 # Local temporary files
 _note_draft.tmp
 
+# Frontend dependencies and generated reports
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
 # Python cache and virtual environments
 __pycache__/
 *.py[cod]
