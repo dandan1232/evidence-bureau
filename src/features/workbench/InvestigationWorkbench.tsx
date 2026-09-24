@@ -23,6 +23,7 @@ import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
 import { evaluateHotspot } from '../../engine/hotspots/evaluate-hotspot'
 import { useGameStore } from '../../state/game-store'
+import { ClueArchive } from '../archive/ClueArchive'
 import {
   EvidenceViewport,
   type CameraObservation,
@@ -36,6 +37,7 @@ type InvestigationWorkbenchProps = {
 }
 
 const initialCommand: ViewCommand = { sequence: 0, type: 'reset' }
+type WorkbenchSection = 'evidence' | 'archive'
 
 export function InvestigationWorkbench({
   bundle,
@@ -49,6 +51,8 @@ export function InvestigationWorkbench({
   const discoverClue = useGameStore((state) => state.discoverClue)
   const [command, setCommand] = useState<ViewCommand>(initialCommand)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [activeSection, setActiveSection] =
+    useState<WorkbenchSection>('evidence')
   const [cameraObservation, setCameraObservation] = useState<CameraObservation>(
     {
       cameraDistance: 0,
@@ -199,17 +203,31 @@ export function InvestigationWorkbench({
         </div>
 
         <nav className={styles.sectionNav} aria-label="调查分区">
-          <button className={styles.activeSection} type="button">
+          <button
+            className={
+              activeSection === 'evidence' ? styles.activeSection : undefined
+            }
+            type="button"
+            aria-pressed={activeSection === 'evidence'}
+            onClick={() => setActiveSection('evidence')}
+          >
             <ScanLine aria-hidden="true" size={17} />
-            {text('ui.navEvidence')}
+            <span>{text('ui.navEvidence')}</span>
           </button>
-          <button disabled type="button" title="下一验收点接入">
+          <button
+            className={
+              activeSection === 'archive' ? styles.activeSection : undefined
+            }
+            type="button"
+            aria-pressed={activeSection === 'archive'}
+            onClick={() => setActiveSection('archive')}
+          >
             <Archive aria-hidden="true" size={17} />
-            {text('ui.navArchive')}
+            <span>{text('ui.navArchive')}</span>
           </button>
           <button disabled type="button" title="证据归档后开放">
             <FileText aria-hidden="true" size={17} />
-            {text('ui.navDeduction')}
+            <span>{text('ui.navDeduction')}</span>
           </button>
         </nav>
 
@@ -232,7 +250,7 @@ export function InvestigationWorkbench({
         </aside>
       ) : null}
 
-      <div className={styles.workspace}>
+      <div className={styles.workspace} hidden={activeSection !== 'evidence'}>
         <section className={styles.viewer} aria-labelledby="evidence-title">
           <div className={styles.viewerHeader}>
             <div>
@@ -380,7 +398,18 @@ export function InvestigationWorkbench({
         </aside>
       </div>
 
-      <footer className={styles.toolDock}>
+      <div
+        className={styles.archiveWorkspace}
+        hidden={activeSection !== 'archive'}
+      >
+        <ClueArchive
+          bundle={bundle}
+          discoveredClueIds={discoveredClueIds}
+          onBackToEvidence={() => setActiveSection('evidence')}
+        />
+      </div>
+
+      <footer className={styles.toolDock} hidden={activeSection !== 'evidence'}>
         <div className={styles.dockLabel}>
           <span>{text('ui.investigationTools')}</span>
           <small>{text('ui.shortcuts')}</small>
@@ -401,6 +430,16 @@ export function InvestigationWorkbench({
           ))}
         </div>
         <span className={styles.sessionState}>{text('ui.unsavedSession')}</span>
+      </footer>
+      <footer
+        className={styles.archiveDock}
+        hidden={activeSection !== 'archive'}
+      >
+        <span>{text('ui.archiveLocalOnly')}</span>
+        <button type="button" onClick={() => setActiveSection('evidence')}>
+          <ScanLine aria-hidden="true" size={16} />
+          {text('ui.continueExamining')}
+        </button>
       </footer>
     </main>
   )
