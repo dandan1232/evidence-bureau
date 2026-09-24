@@ -105,3 +105,11 @@ test('刷新页面后恢复已发现线索和当前工具', async ({ page }) => 
   await page.goto('/#/cases/vanished-tenant')
   await expect(page.getByRole('link', { name: /继续调查/ })).toBeVisible()
 })
+
+test('生产构建不能通过 URL 打开热点标注模式', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation?authoring=1')
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '热点标注模式' })).toHaveCount(
+    0,
+  )
+})

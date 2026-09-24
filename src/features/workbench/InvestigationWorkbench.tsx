@@ -17,7 +17,7 @@ import {
   useState,
   type CSSProperties,
 } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
@@ -25,6 +25,11 @@ import { evaluateHotspot } from '../../engine/hotspots/evaluate-hotspot'
 import { useGameStore } from '../../state/game-store'
 import { useGamePersistence } from '../../state/use-game-persistence'
 import { ClueArchive } from '../archive/ClueArchive'
+import {
+  AuthoringPanel,
+  type AuthoringHotspot,
+} from '../authoring/AuthoringPanel'
+import { canEnableAuthoringMode } from '../authoring/authoring-gate'
 import { DeductionBoard } from '../deduction-board/DeductionBoard'
 import {
   EvidenceViewport,
@@ -45,6 +50,11 @@ export function InvestigationWorkbench({
   bundle,
 }: InvestigationWorkbenchProps) {
   const { caseDefinition, messages } = bundle
+  const location = useLocation()
+  const authoringEnabled = canEnableAuthoringMode(
+    import.meta.env.DEV,
+    location.search,
+  )
   const persistenceStatus = useGamePersistence(
     caseDefinition.id,
     caseDefinition.contentVersion,
@@ -84,6 +94,15 @@ export function InvestigationWorkbench({
     investigationTools.find(({ id }) => id === selectedTool) ??
     investigationTools[0]
   const activeHotspot = currentEvidence?.hotspots[0]
+  const [authoringHotspot, setAuthoringHotspot] = useState<AuthoringHotspot>(
+    () =>
+      activeHotspot?.shape.type === 'sphere'
+        ? {
+            center: [...activeHotspot.shape.center],
+            radius: activeHotspot.shape.radius,
+          }
+        : { center: [0, 0, 0], radius: 0.2 },
+  )
   const activeClue = caseDefinition.clues.find(
     ({ id }) => id === activeHotspot?.clueId,
   )
@@ -267,6 +286,16 @@ export function InvestigationWorkbench({
         </aside>
       ) : null}
 
+      {authoringEnabled && activeHotspot ? (
+        <AuthoringPanel
+          clueId={activeHotspot.clueId}
+          hotspot={authoringHotspot}
+          hotspotId={activeHotspot.id}
+          observation={cameraObservation}
+          onChange={setAuthoringHotspot}
+        />
+      ) : null}
+
       <div className={styles.workspace} hidden={activeSection !== 'evidence'}>
         <section className={styles.viewer} aria-labelledby="evidence-title">
           <div className={styles.viewerHeader}>
@@ -291,6 +320,7 @@ export function InvestigationWorkbench({
               selectedTool={selectedTool}
               command={command}
               onObservationChange={updateCameraObservation}
+              authoringHotspot={authoringEnabled ? authoringHotspot : undefined}
             />
             {selectedTool === 'side-light' && !clueDiscovered ? (
               <button

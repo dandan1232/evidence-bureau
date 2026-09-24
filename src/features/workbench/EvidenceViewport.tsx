@@ -15,6 +15,10 @@ type EvidenceViewportProps = {
   selectedTool: ToolId
   command: ViewCommand
   onObservationChange: (observation: CameraObservation) => void
+  authoringHotspot?: {
+    center: [number, number, number]
+    radius: number
+  }
 }
 
 export type CameraObservation = {
@@ -26,6 +30,7 @@ export function EvidenceViewport({
   selectedTool,
   command,
   onObservationChange,
+  authoringHotspot,
 }: EvidenceViewportProps) {
   const [webGLAvailable] = useState(supportsWebGL)
 
@@ -52,7 +57,7 @@ export function EvidenceViewport({
         <color attach="background" args={['#0b0d0e']} />
         <fog attach="fog" args={['#0b0d0e', 8, 15]} />
         <SceneLighting tool={selectedTool} />
-        <DeskEvidence tool={selectedTool} />
+        <DeskEvidence tool={selectedTool} authoringHotspot={authoringHotspot} />
         <ContactShadows
           position={[0, -0.03, 0]}
           opacity={0.38}
@@ -140,7 +145,13 @@ function SceneLighting({ tool }: { tool: ToolId }) {
   )
 }
 
-function DeskEvidence({ tool }: { tool: ToolId }) {
+function DeskEvidence({
+  tool,
+  authoringHotspot,
+}: {
+  tool: ToolId
+  authoringHotspot?: EvidenceViewportProps['authoringHotspot']
+}) {
   const wireframe = tool === 'wireframe'
   const ultraviolet = tool === 'ultraviolet'
   const material = {
@@ -195,6 +206,19 @@ function DeskEvidence({ tool }: { tool: ToolId }) {
           wireframe={wireframe}
         />
       </mesh>
+
+      {authoringHotspot ? (
+        <mesh position={authoringHotspot.center} renderOrder={10}>
+          <sphereGeometry args={[authoringHotspot.radius, 20, 12]} />
+          <meshBasicMaterial
+            color="#f0a83a"
+            depthTest={false}
+            opacity={0.75}
+            transparent
+            wireframe
+          />
+        </mesh>
+      ) : null}
     </group>
   )
 }
