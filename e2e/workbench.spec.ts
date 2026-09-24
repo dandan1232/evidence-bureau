@@ -47,6 +47,30 @@ test('数字快捷键可切换调查工具', async ({ page }) => {
   )
 })
 
+test('三件物证可依次切换并复位视角', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+
+  await page.getByRole('button', { name: /损坏的旧相机/ }).click()
+  await expect(
+    page.getByRole('heading', { name: '损坏的旧相机' }),
+  ).toBeVisible()
+  await expect(page.getByText('进度已保存')).toBeVisible()
+
+  await page.reload()
+  await expect(
+    page.getByRole('heading', { name: '损坏的旧相机' }),
+  ).toBeVisible()
+
+  for (const evidenceName of ['黄铜钥匙', '被移动过的桌子']) {
+    await page.getByRole('button', { name: new RegExp(evidenceName) }).click()
+    await expect(
+      page.getByRole('heading', { name: evidenceName }),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: '复位' })).toBeEnabled()
+  }
+})
+
 test('使用侧光持续观察可记录桌腿磨痕', async ({ page }) => {
   await page.goto('/#/cases/vanished-tenant/investigation')
   await expect(page.getByTestId('evidence-viewport')).toBeVisible()

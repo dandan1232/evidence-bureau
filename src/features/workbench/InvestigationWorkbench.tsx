@@ -317,10 +317,13 @@ export function InvestigationWorkbench({
 
           <div className={styles.canvasFrame}>
             <EvidenceViewport
+              evidenceId={currentEvidence.id}
               selectedTool={selectedTool}
               command={command}
               onObservationChange={updateCameraObservation}
-              authoringHotspot={authoringEnabled ? authoringHotspot : undefined}
+              authoringHotspot={
+                authoringEnabled && activeHotspot ? authoringHotspot : undefined
+              }
             />
             {selectedTool === 'side-light' && !clueDiscovered ? (
               <button
@@ -395,25 +398,22 @@ export function InvestigationWorkbench({
           <ol className={styles.evidenceItems}>
             {caseDefinition.evidence.map((evidence, index) => {
               const active = evidence.id === currentEvidence.id
-              const available = evidence.id === 'moved-desk'
               return (
                 <li key={evidence.id}>
                   <button
                     className={active ? styles.activeEvidence : undefined}
-                    disabled={!available}
                     type="button"
-                    onClick={() => setCurrentEvidence(evidence.id)}
+                    onClick={() => {
+                      setCurrentEvidence(evidence.id)
+                      issueCommand('reset')
+                    }}
                   >
                     <span className={styles.itemNumber}>
                       {String(index + 1).padStart(2, '0')}
                     </span>
                     <span>
                       <strong>{text(evidence.titleKey)}</strong>
-                      <small>
-                        {available
-                          ? text('ui.readyForScan')
-                          : text('ui.assetPending')}
-                      </small>
+                      <small>{text('ui.readyForScan')}</small>
                     </span>
                   </button>
                 </li>

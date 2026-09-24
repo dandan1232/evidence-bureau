@@ -12,6 +12,7 @@ export type ViewCommand = {
 }
 
 type EvidenceViewportProps = {
+  evidenceId: string
   selectedTool: ToolId
   command: ViewCommand
   onObservationChange: (observation: CameraObservation) => void
@@ -27,6 +28,7 @@ export type CameraObservation = {
 }
 
 export function EvidenceViewport({
+  evidenceId,
   selectedTool,
   command,
   onObservationChange,
@@ -35,10 +37,15 @@ export function EvidenceViewport({
   const [webGLAvailable] = useState(supportsWebGL)
 
   if (!webGLAvailable) {
+    const evidenceName = evidenceNames[evidenceId] ?? '当前物证'
     return (
-      <div className={styles.fallback} role="img" aria-label="桌子物证文字预览">
+      <div
+        className={styles.fallback}
+        role="img"
+        aria-label={`${evidenceName}文字预览`}
+      >
         <span>WEBGL UNAVAILABLE</span>
-        <strong>被移动过的桌子</strong>
+        <strong>{evidenceName}</strong>
         <p>
           浏览器无法建立 3D 场景。你仍可阅读物证档案，换用支持 WebGL
           的桌面浏览器后可旋转检查。
@@ -57,7 +64,11 @@ export function EvidenceViewport({
         <color attach="background" args={['#0b0d0e']} />
         <fog attach="fog" args={['#0b0d0e', 8, 15]} />
         <SceneLighting tool={selectedTool} />
-        <DeskEvidence tool={selectedTool} authoringHotspot={authoringHotspot} />
+        <EvidenceModel
+          evidenceId={evidenceId}
+          tool={selectedTool}
+          authoringHotspot={authoringHotspot}
+        />
         <ContactShadows
           position={[0, -0.03, 0]}
           opacity={0.38}
@@ -85,8 +96,12 @@ export function EvidenceViewport({
 
       {selectedTool === 'measurement' ? (
         <div className={styles.measurementOverlay} aria-live="polite">
-          <span className={styles.widthMeasure}>1.42 M</span>
-          <span className={styles.heightMeasure}>0.76 M</span>
+          <span className={styles.widthMeasure}>
+            {evidenceMeasurements[evidenceId]?.width ?? '—'}
+          </span>
+          <span className={styles.heightMeasure}>
+            {evidenceMeasurements[evidenceId]?.height ?? '—'}
+          </span>
         </div>
       ) : null}
 
@@ -98,6 +113,19 @@ export function EvidenceViewport({
     </div>
   )
 }
+
+const evidenceNames: Record<string, string> = {
+  'moved-desk': '被移动过的桌子',
+  'damaged-camera': '损坏的旧相机',
+  'brass-key': '黄铜钥匙',
+}
+
+const evidenceMeasurements: Record<string, { width: string; height: string }> =
+  {
+    'moved-desk': { width: '1.42 M', height: '0.76 M' },
+    'damaged-camera': { width: '138 MM', height: '92 MM' },
+    'brass-key': { width: '84 MM', height: '29 MM' },
+  }
 
 function SceneLighting({ tool }: { tool: ToolId }) {
   if (tool === 'side-light') {
@@ -143,6 +171,26 @@ function SceneLighting({ tool }: { tool: ToolId }) {
       />
     </>
   )
+}
+
+function EvidenceModel({
+  evidenceId,
+  tool,
+  authoringHotspot,
+}: {
+  evidenceId: string
+  tool: ToolId
+  authoringHotspot?: EvidenceViewportProps['authoringHotspot']
+}) {
+  if (evidenceId === 'damaged-camera') {
+    return <CameraEvidence tool={tool} />
+  }
+
+  if (evidenceId === 'brass-key') {
+    return <BrassKeyEvidence tool={tool} />
+  }
+
+  return <DeskEvidence tool={tool} authoringHotspot={authoringHotspot} />
 }
 
 function DeskEvidence({
@@ -219,6 +267,133 @@ function DeskEvidence({
           />
         </mesh>
       ) : null}
+    </group>
+  )
+}
+
+function CameraEvidence({ tool }: { tool: ToolId }) {
+  const wireframe = tool === 'wireframe'
+  const ultraviolet = tool === 'ultraviolet'
+  const bodyColor = ultraviolet ? '#455753' : '#777a78'
+  const metalColor = ultraviolet ? '#65746e' : '#a5a7a3'
+
+  return (
+    <group position={[0, 0.12, 0]} rotation={[0.04, -0.3, 0]}>
+      <mesh castShadow receiveShadow position={[0, 0.72, 0]}>
+        <boxGeometry args={[2.45, 1.35, 0.82]} />
+        <meshStandardMaterial
+          color={bodyColor}
+          metalness={0.38}
+          roughness={tool === 'side-light' ? 0.82 : 0.58}
+          wireframe={wireframe}
+        />
+      </mesh>
+
+      <mesh
+        castShadow
+        position={[0, 0.72, 0.64]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <cylinderGeometry args={[0.63, 0.72, 0.58, 32]} />
+        <meshStandardMaterial
+          color={metalColor}
+          metalness={0.72}
+          roughness={0.38}
+          wireframe={wireframe}
+        />
+      </mesh>
+      <mesh position={[0, 0.72, 0.95]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.45, 0.5, 0.08, 32]} />
+        <meshStandardMaterial
+          color={ultraviolet ? '#8bc4ad' : '#242a2b'}
+          emissive={ultraviolet ? '#4f9e7d' : '#000000'}
+          emissiveIntensity={ultraviolet ? 1.1 : 0}
+          metalness={0.3}
+          roughness={0.2}
+          wireframe={wireframe}
+        />
+      </mesh>
+
+      <mesh castShadow position={[-0.62, 1.53, -0.02]}>
+        <boxGeometry args={[0.64, 0.34, 0.52]} />
+        <meshStandardMaterial
+          color={metalColor}
+          metalness={0.5}
+          roughness={0.46}
+          wireframe={wireframe}
+        />
+      </mesh>
+      <mesh castShadow position={[0.7, 1.47, 0]}>
+        <cylinderGeometry args={[0.3, 0.3, 0.16, 24]} />
+        <meshStandardMaterial
+          color={metalColor}
+          metalness={0.65}
+          roughness={0.42}
+          wireframe={wireframe}
+        />
+      </mesh>
+
+      <mesh position={[0.72, 1.57, 0.02]} rotation={[0, 0.3, 0]}>
+        <boxGeometry args={[0.42, 0.025, 0.16]} />
+        <meshStandardMaterial
+          color={ultraviolet ? '#c9eadb' : '#4f5352'}
+          emissive={ultraviolet ? '#75b99a' : '#000000'}
+          emissiveIntensity={ultraviolet ? 1.5 : 0}
+          roughness={0.95}
+          wireframe={wireframe}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function BrassKeyEvidence({ tool }: { tool: ToolId }) {
+  const wireframe = tool === 'wireframe'
+  const ultraviolet = tool === 'ultraviolet'
+  const brass = ultraviolet ? '#78866b' : '#a9853f'
+  const wornBrass = ultraviolet ? '#9ba88d' : '#c5a867'
+  const material = {
+    color: brass,
+    metalness: 0.82,
+    roughness: tool === 'side-light' ? 0.56 : 0.38,
+    wireframe,
+  }
+
+  return (
+    <group
+      position={[-0.15, 0.62, 0]}
+      rotation={[Math.PI / 2.35, -0.28, -0.12]}
+      scale={1.18}
+    >
+      <mesh castShadow position={[-1.2, 0, 0]}>
+        <torusGeometry args={[0.62, 0.2, 18, 42]} />
+        <meshStandardMaterial {...material} />
+      </mesh>
+
+      <mesh castShadow position={[0.25, 0, 0]}>
+        <boxGeometry args={[2.35, 0.34, 0.22]} />
+        <meshStandardMaterial {...material} />
+      </mesh>
+
+      <mesh castShadow position={[1.25, -0.28, 0]}>
+        <boxGeometry args={[0.35, 0.65, 0.22]} />
+        <meshStandardMaterial {...material} color={wornBrass} />
+      </mesh>
+      <mesh castShadow position={[0.72, -0.22, 0]}>
+        <boxGeometry args={[0.3, 0.5, 0.22]} />
+        <meshStandardMaterial {...material} color={wornBrass} />
+      </mesh>
+
+      <mesh position={[0.1, 0.19, 0.13]}>
+        <boxGeometry args={[1.15, 0.035, 0.035]} />
+        <meshStandardMaterial
+          color={ultraviolet ? '#c9eadb' : '#6d562e'}
+          emissive={ultraviolet ? '#72a88d' : '#000000'}
+          emissiveIntensity={ultraviolet ? 1.15 : 0}
+          roughness={1}
+          wireframe={wireframe}
+        />
+      </mesh>
     </group>
   )
 }
