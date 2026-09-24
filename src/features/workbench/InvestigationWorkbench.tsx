@@ -1,5 +1,6 @@
 import {
   Archive,
+  BookOpenText,
   ChevronLeft,
   CircleHelp,
   FileText,
@@ -31,6 +32,7 @@ import {
 } from '../authoring/AuthoringPanel'
 import { canEnableAuthoringMode } from '../authoring/authoring-gate'
 import { DeductionBoard } from '../deduction-board/DeductionBoard'
+import { CaseMaterials } from '../materials/CaseMaterials'
 import {
   EvidenceViewport,
   type CameraObservation,
@@ -44,7 +46,7 @@ type InvestigationWorkbenchProps = {
 }
 
 const initialCommand: ViewCommand = { sequence: 0, type: 'reset' }
-type WorkbenchSection = 'evidence' | 'archive' | 'deduction'
+type WorkbenchSection = 'evidence' | 'archive' | 'materials' | 'deduction'
 
 export function InvestigationWorkbench({
   bundle,
@@ -286,6 +288,17 @@ export function InvestigationWorkbench({
           </button>
           <button
             className={
+              activeSection === 'materials' ? styles.activeSection : undefined
+            }
+            type="button"
+            aria-pressed={activeSection === 'materials'}
+            onClick={() => setActiveSection('materials')}
+          >
+            <BookOpenText aria-hidden="true" size={17} />
+            <span>{text('ui.navMaterials')}</span>
+          </button>
+          <button
+            className={
               activeSection === 'deduction' ? styles.activeSection : undefined
             }
             disabled={discoveredClueIds.length === 0}
@@ -498,6 +511,13 @@ export function InvestigationWorkbench({
         <DeductionBoard bundle={bundle} />
       </div>
 
+      <div
+        className={styles.archiveWorkspace}
+        hidden={activeSection !== 'materials'}
+      >
+        <CaseMaterials bundle={bundle} />
+      </div>
+
       <footer className={styles.toolDock} hidden={activeSection !== 'evidence'}>
         <div className={styles.dockLabel}>
           <span>{text('ui.investigationTools')}</span>
@@ -530,7 +550,9 @@ export function InvestigationWorkbench({
           {text(
             activeSection === 'deduction'
               ? 'ui.deductionLocalOnly'
-              : 'ui.archiveLocalOnly',
+              : activeSection === 'materials'
+                ? 'ui.materialsReadonly'
+                : 'ui.archiveLocalOnly',
           )}
         </span>
         <button type="button" onClick={() => setActiveSection('evidence')}>

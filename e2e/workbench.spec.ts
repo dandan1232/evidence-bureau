@@ -117,6 +117,24 @@ test('数字快捷键可切换调查工具', async ({ page }) => {
   )
 })
 
+test('证词与案件文档可在材料区交叉查阅', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await page.getByRole('button', { name: '材料' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: '证词与案件材料' }),
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: '证词记录' })).toBeVisible()
+  await expect(page.getByText('夜班经理 · 周启明')).toBeVisible()
+  await expect(page.getByText('客房清洁员 · 林秀兰')).toBeVisible()
+  await expect(page.getByText('隔壁住客 · 赵铭')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '北墙检修设施旧平面图' }),
+  ).toBeVisible()
+  await expect(page.getByText(/检修盖板编号 MT-407/)).toBeVisible()
+  await expect(page.getByText('原始材料为只读记录')).toBeVisible()
+})
+
 test('三件物证可依次切换并复位视角', async ({ page }) => {
   await page.goto('/#/cases/vanished-tenant/investigation')
   await expect(page.getByTestId('evidence-viewport')).toBeVisible()

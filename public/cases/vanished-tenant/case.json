@@ -362,8 +362,43 @@
       "descriptionKey": "conclusion.desk-was-moved.description"
     }
   ],
-  "statements": [],
-  "documents": [],
+  "statements": [
+    {
+      "id": "statement-night-manager",
+      "speakerKey": "person.night-manager.name",
+      "titleKey": "statement.night-manager.title",
+      "contentKey": "statement.night-manager.content"
+    },
+    {
+      "id": "statement-housekeeper",
+      "speakerKey": "person.housekeeper.name",
+      "titleKey": "statement.housekeeper.title",
+      "contentKey": "statement.housekeeper.content"
+    },
+    {
+      "id": "statement-neighboring-guest",
+      "speakerKey": "person.neighboring-guest.name",
+      "titleKey": "statement.neighboring-guest.title",
+      "contentKey": "statement.neighboring-guest.content"
+    }
+  ],
+  "documents": [
+    {
+      "id": "document-corridor-timeline",
+      "titleKey": "document.corridor-timeline.title",
+      "contentKey": "document.corridor-timeline.content"
+    },
+    {
+      "id": "document-maintenance-plan",
+      "titleKey": "document.maintenance-plan.title",
+      "contentKey": "document.maintenance-plan.content"
+    },
+    {
+      "id": "document-film-register",
+      "titleKey": "document.film-register.title",
+      "contentKey": "document.film-register.content"
+    }
+  ],
   "deductions": [
     {
       "id": "desk-moved-rule",
