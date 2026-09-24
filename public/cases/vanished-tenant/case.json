@@ -47,6 +47,54 @@
           "maxCameraDistance": 9,
           "dwellMs": 1200,
           "prerequisites": []
+        },
+        {
+          "id": "desk-wall-notch-hotspot",
+          "clueId": "desk-wall-impact-notch",
+          "shape": {
+            "type": "sphere",
+            "center": [0.08, 1.34, -0.72],
+            "radius": 0.3
+          },
+          "requiredTool": "white-light",
+          "surfaceNormal": [0, 0, -1],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 700,
+          "prerequisites": []
+        },
+        {
+          "id": "desk-underside-bracket-hotspot",
+          "clueId": "desk-underside-bracket",
+          "shape": {
+            "type": "sphere",
+            "center": [0, 0.88, -0.68],
+            "radius": 0.45
+          },
+          "requiredTool": "wireframe",
+          "surfaceNormal": [0, 0, -1],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 900,
+          "prerequisites": []
+        },
+        {
+          "id": "desk-access-clearance-hotspot",
+          "clueId": "desk-access-clearance",
+          "shape": {
+            "type": "sphere",
+            "center": [0, 1.28, 0],
+            "radius": 0.65
+          },
+          "requiredTool": "measurement",
+          "surfaceNormal": [0, 1, 0],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 900,
+          "prerequisites": []
         }
       ],
       "assetBudget": { "maxBytes": 12582912, "maxTriangles": 180000 }
@@ -229,6 +277,27 @@
       "evidenceId": "moved-desk",
       "titleKey": "clue.desk-leg-scrape.title",
       "descriptionKey": "clue.desk-leg-scrape.description"
+    },
+    {
+      "id": "desk-wall-impact-notch",
+      "kind": "observation",
+      "evidenceId": "moved-desk",
+      "titleKey": "clue.desk-wall-notch.title",
+      "descriptionKey": "clue.desk-wall-notch.description"
+    },
+    {
+      "id": "desk-underside-bracket",
+      "kind": "observation",
+      "evidenceId": "moved-desk",
+      "titleKey": "clue.desk-underside-bracket.title",
+      "descriptionKey": "clue.desk-underside-bracket.description"
+    },
+    {
+      "id": "desk-access-clearance",
+      "kind": "observation",
+      "evidenceId": "moved-desk",
+      "titleKey": "clue.desk-access-clearance.title",
+      "descriptionKey": "clue.desk-access-clearance.description"
     },
     {
       "id": "camera-counter-gap",

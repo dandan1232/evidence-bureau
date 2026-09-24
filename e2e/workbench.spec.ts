@@ -141,12 +141,33 @@ test('三件物证可依次切换并复位视角', async ({ page }) => {
   }
 })
 
-test('使用侧光持续观察可记录桌腿磨痕', async ({ page }) => {
+test('桌子可通过四种工具确认移动与遮挡痕迹', async ({ page }) => {
   await page.goto('/#/cases/vanished-tenant/investigation')
   await expect(page.getByTestId('evidence-viewport')).toBeVisible()
 
-  await discoverDeskLegScrape(page)
-  await expect(page.getByText('1 / 1')).toBeVisible()
+  const observations = [
+    { tool: '白光', clue: '桌沿碰撞缺口方向异常' },
+    { tool: '侧光', clue: '桌腿新鲜磨痕' },
+    { tool: '线框', clue: '桌板下方存在遮挡支架' },
+    { tool: '测量', clue: '桌面尺寸恰好覆盖检修口' },
+  ]
+
+  for (const observation of observations) {
+    await page
+      .getByRole('toolbar', { name: '调查工具' })
+      .getByRole('button', { name: new RegExp(observation.tool) })
+      .click()
+    const signal = page.getByRole('button', {
+      name: '检测到异常 · 保持观察',
+    })
+    await expect(signal).toBeEnabled()
+    await signal.hover()
+    await expect(
+      page.getByRole('status').getByText(observation.clue),
+    ).toBeVisible({ timeout: 4000 })
+  }
+
+  await expect(page.getByText('4 / 4')).toBeVisible()
 })
 
 test('已发现线索可在档案中查阅来源与说明', async ({ page }) => {
@@ -193,7 +214,7 @@ test('刷新页面后恢复已发现线索和当前工具', async ({ page }) => 
     'aria-pressed',
     'true',
   )
-  await expect(page.getByText('1 / 1')).toBeVisible()
+  await expect(page.getByText('1 / 4')).toBeVisible()
   await expect(page.getByText('本地进度 · 已恢复')).toBeVisible()
 
   await page.goto('/#/cases/vanished-tenant')
