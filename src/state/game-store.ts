@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import type { ToolId } from '../cases/schema'
+import type { SavedProgress } from './save-store'
 
 type InvestigationState = {
   currentEvidenceId: string
@@ -13,6 +14,7 @@ type InvestigationState = {
   discoverClue: (clueId: string) => void
   addDeductionNode: (nodeId: string) => void
   unlockConclusion: (conclusionId: string) => void
+  hydrateProgress: (progress: SavedProgress) => void
   resetInvestigation: () => void
 }
 
@@ -51,5 +53,6 @@ export const useGameStore = create<InvestigationState>((set) => ({
             ],
           },
     ),
+  hydrateProgress: (progress) => set(progress),
   resetInvestigation: () => set(initialState),
 }))

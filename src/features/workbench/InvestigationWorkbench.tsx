@@ -23,6 +23,7 @@ import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
 import { evaluateHotspot } from '../../engine/hotspots/evaluate-hotspot'
 import { useGameStore } from '../../state/game-store'
+import { useGamePersistence } from '../../state/use-game-persistence'
 import { ClueArchive } from '../archive/ClueArchive'
 import { DeductionBoard } from '../deduction-board/DeductionBoard'
 import {
@@ -44,6 +45,10 @@ export function InvestigationWorkbench({
   bundle,
 }: InvestigationWorkbenchProps) {
   const { caseDefinition, messages } = bundle
+  const persistenceStatus = useGamePersistence(
+    caseDefinition.id,
+    caseDefinition.contentVersion,
+  )
   const selectedTool = useGameStore((state) => state.selectedTool)
   const selectTool = useGameStore((state) => state.selectTool)
   const currentEvidenceId = useGameStore((state) => state.currentEvidenceId)
@@ -448,7 +453,9 @@ export function InvestigationWorkbench({
             </button>
           ))}
         </div>
-        <span className={styles.sessionState}>{text('ui.unsavedSession')}</span>
+        <span className={styles.sessionState} aria-live="polite">
+          {text(`ui.save-status.${persistenceStatus}`)}
+        </span>
       </footer>
       <footer
         className={styles.archiveDock}

@@ -85,3 +85,23 @@ test('已归档线索可形成中间推理结论', async ({ page }) => {
   ).toBeVisible()
   await expect(board.getByText('规则匹配 · 临时判断成立')).toBeVisible()
 })
+
+test('刷新页面后恢复已发现线索和当前工具', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+  await discoverDeskLegScrape(page)
+  await expect(page.getByText('进度已保存')).toBeVisible()
+
+  await page.reload()
+
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+  await expect(page.getByRole('button', { name: /侧光/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.getByText('1 / 4')).toBeVisible()
+  await expect(page.getByText('本地进度 · 已恢复')).toBeVisible()
+
+  await page.goto('/#/cases/vanished-tenant')
+  await expect(page.getByRole('link', { name: /继续调查/ })).toBeVisible()
+})

@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom'
 
 import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
+import { hasRestorableProgress } from '../../state/save-store'
 import styles from './CaseBriefingPage.module.css'
 
 type CaseBriefingPageProps = {
@@ -22,6 +23,13 @@ export function CaseBriefingPage({ bundle }: CaseBriefingPageProps) {
   const [reduceMotion, setReduceMotion] = useState(false)
   const [highContrast, setHighContrast] = useState(false)
   const { caseDefinition, messages } = bundle
+  const [hasProgress] = useState(() =>
+    hasRestorableProgress(
+      localStorage,
+      caseDefinition.id,
+      caseDefinition.contentVersion,
+    ),
+  )
   const { metadata, evidence } = caseDefinition
   const text = (key: string) => translate(messages, key)
 
@@ -117,7 +125,11 @@ export function CaseBriefingPage({ bundle }: CaseBriefingPageProps) {
               className={styles.primaryAction}
               to={`/cases/${caseDefinition.id}/investigation`}
             >
-              {text('ui.startInvestigation')}
+              {text(
+                hasProgress
+                  ? 'ui.continueInvestigation'
+                  : 'ui.startInvestigation',
+              )}
               <ArrowRight aria-hidden="true" size={18} />
             </Link>
             <p className={styles.deviceAdvice}>
