@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
-import { CaseLoadError, loadCase, type CaseBundle } from '../cases/loader'
 import { CaseBriefingPage } from '../features/briefing/CaseBriefingPage'
-import { InvestigationHandoff } from '../features/workbench/InvestigationHandoff'
 import styles from './App.module.css'
+import { useCaseBundle } from './use-case-bundle'
 
 const FIRST_CASE_ID = 'vanished-tenant'
-
-type LoadState =
-  | { status: 'loading' }
-  | { status: 'ready'; bundle: CaseBundle }
-  | { status: 'error'; message: string }
+const InvestigationWorkbench = lazy(() =>
+  import('../features/workbench/InvestigationWorkbench').then((module) => ({
+    default: module.InvestigationWorkbench,
+  })),
+)
 
 export function AppRoutes() {
   return (
@@ -23,7 +22,7 @@ export function AppRoutes() {
       <Route path="/cases/:caseId" element={<CaseBriefingRoute />} />
       <Route
         path="/cases/:caseId/investigation"
-        element={<InvestigationHandoff />}
+        element={<InvestigationRoute />}
       />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
@@ -32,34 +31,7 @@ export function AppRoutes() {
 
 function CaseBriefingRoute() {
   const { caseId = '' } = useParams()
-  const [attempt, setAttempt] = useState(0)
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
-
-  useEffect(() => {
-    let isCurrent = true
-
-    void loadCase(caseId, 'zh-CN')
-      .then((bundle) => {
-        if (isCurrent) setState({ status: 'ready', bundle })
-      })
-      .catch((error: unknown) => {
-        if (!isCurrent) return
-        const message =
-          error instanceof CaseLoadError
-            ? error.message
-            : '案件档案发生未知错误。'
-        setState({ status: 'error', message })
-      })
-
-    return () => {
-      isCurrent = false
-    }
-  }, [attempt, caseId])
-
-  const retry = useCallback(() => {
-    setState({ status: 'loading' })
-    setAttempt((value) => value + 1)
-  }, [])
+  const { state, retry } = useCaseBundle(caseId)
 
   if (state.status === 'loading') {
     return (
@@ -78,6 +50,37 @@ function CaseBriefingRoute() {
   }
 
   return <CaseBriefingPage bundle={state.bundle} />
+}
+
+function InvestigationRoute() {
+  const { caseId = '' } = useParams()
+  const { state, retry } = useCaseBundle(caseId)
+
+  if (state.status === 'loading') {
+    return (
+      <StatusPage title="正在启动物证台" detail="初始化扫描场景与案件状态…" />
+    )
+  }
+
+  if (state.status === 'error') {
+    return (
+      <StatusPage
+        title="物证台暂时无法启动"
+        detail={state.message}
+        onRetry={retry}
+      />
+    )
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <StatusPage title="正在准备扫描场景" detail="加载 3D 调查引擎…" />
+      }
+    >
+      <InvestigationWorkbench bundle={state.bundle} />
+    </Suspense>
+  )
 }
 
 type StatusPageProps = {

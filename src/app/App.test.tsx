@@ -15,6 +15,8 @@ describe('App', () => {
       vi
         .fn<typeof fetch>()
         .mockResolvedValueOnce(Response.json(caseJson))
+        .mockResolvedValueOnce(Response.json(messagesJson))
+        .mockResolvedValueOnce(Response.json(caseJson))
         .mockResolvedValueOnce(Response.json(messagesJson)),
     )
   })
@@ -31,7 +33,14 @@ describe('App', () => {
 
     await user.click(screen.getByRole('link', { name: /开始调查/ }))
 
-    expect(screen.getByRole('heading', { name: '调查工作台' })).toBeVisible()
+    expect(
+      await screen.findByRole(
+        'heading',
+        { name: '被移动过的桌子' },
+        { timeout: 5000 },
+      ),
+    ).toBeVisible()
+    expect(screen.getByRole('toolbar', { name: '调查工具' })).toBeVisible()
   })
 
   it('案件请求失败后允许重新读取', async () => {

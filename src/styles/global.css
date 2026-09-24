@@ -20,6 +20,9 @@
   --color-primary-light: oklch(0.74 0.12 353.2);
   --color-accent: oklch(0.72 0.055 235);
   --color-success: oklch(0.72 0.1 152);
+  --color-warning: oklch(0.76 0.12 78);
+  --color-warning-dim: oklch(0.48 0.08 78);
+  --color-danger: oklch(0.63 0.19 25);
   --font-mono: 'IBM Plex Mono', 'Cascadia Mono', monospace;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }

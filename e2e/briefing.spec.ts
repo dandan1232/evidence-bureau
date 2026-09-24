@@ -29,7 +29,9 @@ test('案件入口支持设置并可进入调查', async ({ page }) => {
   await expect(page.getByRole('main')).toHaveClass(/highContrast/)
 
   await page.getByRole('link', { name: /开始调查/ }).click()
-  await expect(page.getByRole('heading', { name: '调查工作台' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '被移动过的桌子' }),
+  ).toBeVisible()
   expect({ consoleErrors, failedResponses }).toEqual({
     consoleErrors: [],
     failedResponses: [],
