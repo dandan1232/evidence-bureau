@@ -68,7 +68,72 @@
         "minPolarAngleDeg": 10,
         "maxPolarAngleDeg": 170
       },
-      "hotspots": [],
+      "hotspots": [
+        {
+          "id": "camera-counter-gap-hotspot",
+          "clueId": "camera-counter-gap",
+          "shape": {
+            "type": "sphere",
+            "center": [-0.58, 1.48, -0.02],
+            "radius": 0.22
+          },
+          "requiredTool": "white-light",
+          "surfaceNormal": [0, 1, 0],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 700,
+          "prerequisites": []
+        },
+        {
+          "id": "camera-shutter-scrape-hotspot",
+          "clueId": "camera-shutter-dial-scrape",
+          "shape": {
+            "type": "sphere",
+            "center": [0.7, 1.47, 0],
+            "radius": 0.24
+          },
+          "requiredTool": "side-light",
+          "surfaceNormal": [0, 1, 0],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 800,
+          "prerequisites": []
+        },
+        {
+          "id": "camera-erased-mark-hotspot",
+          "clueId": "camera-erased-delay-mark",
+          "shape": {
+            "type": "sphere",
+            "center": [0.72, 1.57, 0.02],
+            "radius": 0.2
+          },
+          "requiredTool": "ultraviolet",
+          "surfaceNormal": [0, 1, 0],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 900,
+          "prerequisites": []
+        },
+        {
+          "id": "camera-timer-spring-hotspot",
+          "clueId": "camera-timer-spring-tension",
+          "shape": {
+            "type": "sphere",
+            "center": [0, 0.72, 0],
+            "radius": 0.42
+          },
+          "requiredTool": "wireframe",
+          "surfaceNormal": [0, 0, 1],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 900,
+          "prerequisites": []
+        }
+      ],
       "assetBudget": { "maxBytes": 10485760, "maxTriangles": 150000 }
     },
     {
@@ -99,6 +164,34 @@
       "evidenceId": "moved-desk",
       "titleKey": "clue.desk-leg-scrape.title",
       "descriptionKey": "clue.desk-leg-scrape.description"
+    },
+    {
+      "id": "camera-counter-gap",
+      "kind": "observation",
+      "evidenceId": "damaged-camera",
+      "titleKey": "clue.camera-counter-gap.title",
+      "descriptionKey": "clue.camera-counter-gap.description"
+    },
+    {
+      "id": "camera-shutter-dial-scrape",
+      "kind": "observation",
+      "evidenceId": "damaged-camera",
+      "titleKey": "clue.camera-shutter-scrape.title",
+      "descriptionKey": "clue.camera-shutter-scrape.description"
+    },
+    {
+      "id": "camera-erased-delay-mark",
+      "kind": "observation",
+      "evidenceId": "damaged-camera",
+      "titleKey": "clue.camera-erased-mark.title",
+      "descriptionKey": "clue.camera-erased-mark.description"
+    },
+    {
+      "id": "camera-timer-spring-tension",
+      "kind": "observation",
+      "evidenceId": "damaged-camera",
+      "titleKey": "clue.camera-timer-spring.title",
+      "descriptionKey": "clue.camera-timer-spring.description"
     },
     {
       "id": "desk-was-moved",

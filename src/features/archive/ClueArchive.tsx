@@ -2,6 +2,7 @@ import { Archive, ArrowLeft, FileCheck2 } from 'lucide-react'
 
 import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
+import { investigationTools } from '../workbench/tool-definitions'
 import styles from './ClueArchive.module.css'
 
 type ClueArchiveProps = {
@@ -17,7 +18,10 @@ export function ClueArchive({
 }: ClueArchiveProps) {
   const { caseDefinition, messages } = bundle
   const text = (key: string) => translate(messages, key)
-  const discoveredClues = caseDefinition.clues.filter(({ id }) =>
+  const archivableClues = caseDefinition.clues.filter(
+    ({ kind }) => kind !== 'conclusion',
+  )
+  const discoveredClues = archivableClues.filter(({ id }) =>
     discoveredClueIds.includes(id),
   )
 
@@ -34,7 +38,7 @@ export function ClueArchive({
         </div>
         <strong>
           {String(discoveredClues.length).padStart(2, '0')} /{' '}
-          {String(caseDefinition.clues.length).padStart(2, '0')}
+          {String(archivableClues.length).padStart(2, '0')}
         </strong>
       </header>
 
@@ -53,6 +57,12 @@ export function ClueArchive({
           {discoveredClues.map((clue, index) => {
             const evidence = caseDefinition.evidence.find(
               ({ id }) => id === clue.evidenceId,
+            )
+            const hotspot = evidence?.hotspots.find(
+              ({ clueId }) => clueId === clue.id,
+            )
+            const discoveryTool = investigationTools.find(
+              ({ id }) => id === hotspot?.requiredTool,
             )
             return (
               <li key={clue.id}>
@@ -75,7 +85,10 @@ export function ClueArchive({
                     {text(clue.descriptionKey)}
                   </p>
                   <footer>
-                    <span>{text('ui.discoveredWithSideLight')}</span>
+                    <span>
+                      {text('ui.investigationMethod')} ·{' '}
+                      {discoveryTool?.name ?? text('ui.unknownSource')}
+                    </span>
                     <span>{text('ui.recordVerified')}</span>
                   </footer>
                 </article>

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 async function discoverDeskLegScrape(page: Page) {
   await page.getByRole('button', { name: /侧光/ }).click()
-  const signal = page.getByRole('button', { name: '反射异常 · 保持观察' })
+  const signal = page.getByRole('button', { name: '检测到异常 · 保持观察' })
   await expect(signal).toBeEnabled()
   await signal.hover()
   await expect(page.getByRole('status').getByText('桌腿新鲜磨痕')).toBeVisible({
@@ -34,6 +34,41 @@ test('物证台支持五种工具、视角控制和帮助说明', async ({ page 
   await page.getByRole('button', { name: /操作说明/ }).click()
   await expect(page.getByText('数字键 1–5 可切换调查工具')).toBeVisible()
   expect(pageErrors).toEqual([])
+})
+
+test('旧相机可通过四种工具发现完整核心线索', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+  await page.getByRole('button', { name: /损坏的旧相机/ }).click()
+
+  const observations = [
+    { tool: '白光', clue: '机械计数器缺号' },
+    { tool: '侧光', clue: '快门拨盘强制刮痕' },
+    { tool: '紫外', clue: '被擦除的延时标记' },
+    { tool: '线框', clue: '延时弹簧仍处于张紧位' },
+  ]
+
+  for (const observation of observations) {
+    await page
+      .getByRole('toolbar', { name: '调查工具' })
+      .getByRole('button', { name: new RegExp(observation.tool) })
+      .click()
+    const signal = page.getByRole('button', {
+      name: '检测到异常 · 保持观察',
+    })
+    await expect(signal).toBeEnabled()
+    await signal.hover()
+    await expect(
+      page.getByRole('status').getByText(observation.clue),
+    ).toBeVisible({ timeout: 4000 })
+  }
+
+  await expect(page.getByText('4 / 4')).toBeVisible()
+  await page.getByRole('button', { name: '档案' }).click()
+  await expect(
+    page.getByRole('heading', { name: '机械计数器缺号' }),
+  ).toBeVisible()
+  await expect(page.getByText('调查方式 · 线框')).toBeVisible()
 })
 
 test('数字快捷键可切换调查工具', async ({ page }) => {
@@ -76,7 +111,7 @@ test('使用侧光持续观察可记录桌腿磨痕', async ({ page }) => {
   await expect(page.getByTestId('evidence-viewport')).toBeVisible()
 
   await discoverDeskLegScrape(page)
-  await expect(page.getByText('1 / 4')).toBeVisible()
+  await expect(page.getByText('1 / 1')).toBeVisible()
 })
 
 test('已发现线索可在档案中查阅来源与说明', async ({ page }) => {
@@ -123,7 +158,7 @@ test('刷新页面后恢复已发现线索和当前工具', async ({ page }) => 
     'aria-pressed',
     'true',
   )
-  await expect(page.getByText('1 / 4')).toBeVisible()
+  await expect(page.getByText('1 / 1')).toBeVisible()
   await expect(page.getByText('本地进度 · 已恢复')).toBeVisible()
 
   await page.goto('/#/cases/vanished-tenant')

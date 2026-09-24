@@ -93,23 +93,38 @@ export function InvestigationWorkbench({
   const activeTool =
     investigationTools.find(({ id }) => id === selectedTool) ??
     investigationTools[0]
-  const activeHotspot = currentEvidence?.hotspots[0]
-  const [authoringHotspot, setAuthoringHotspot] = useState<AuthoringHotspot>(
-    () =>
-      activeHotspot?.shape.type === 'sphere'
-        ? {
-            center: [...activeHotspot.shape.center],
-            radius: activeHotspot.shape.radius,
-          }
-        : { center: [0, 0, 0], radius: 0.2 },
-  )
-  const activeClue = caseDefinition.clues.find(
-    ({ id }) => id === activeHotspot?.clueId,
-  )
   const discoveredSet = useMemo(
     () => new Set(discoveredClueIds),
     [discoveredClueIds],
   )
+  const activeHotspot = currentEvidence?.hotspots.find(
+    ({ clueId, requiredTool }) =>
+      requiredTool === selectedTool && !discoveredSet.has(clueId),
+  )
+  const authoringHotspotDefinition =
+    activeHotspot ?? currentEvidence?.hotspots[0]
+  const [authoringOverrides, setAuthoringOverrides] = useState<
+    Record<string, AuthoringHotspot>
+  >({})
+  const authoringHotspot = authoringHotspotDefinition
+    ? (authoringOverrides[authoringHotspotDefinition.id] ??
+      (authoringHotspotDefinition.shape.type === 'sphere'
+        ? {
+            center: [...authoringHotspotDefinition.shape.center],
+            radius: authoringHotspotDefinition.shape.radius,
+          }
+        : { center: [0, 0, 0], radius: 0.2 }))
+    : { center: [0, 0, 0] as [number, number, number], radius: 0.2 }
+  const currentEvidenceClueIds = useMemo(
+    () => new Set(currentEvidence?.hotspots.map(({ clueId }) => clueId) ?? []),
+    [currentEvidence],
+  )
+  const currentDiscoveredClues = discoveredClueIds
+    .filter((clueId) => currentEvidenceClueIds.has(clueId))
+    .map((clueId) => caseDefinition.clues.find(({ id }) => id === clueId))
+    .filter((clue) => clue !== undefined)
+  const latestDiscoveredClue = currentDiscoveredClues.at(-1)
+  const totalEvidenceClues = currentEvidence?.hotspots.length ?? 0
   const hotspotEvaluation = activeHotspot
     ? evaluateHotspot(activeHotspot, {
         selectedTool,
@@ -119,15 +134,35 @@ export function InvestigationWorkbench({
       })
     : null
   const hotspotAligned =
-    hotspotEvaluation?.status === 'pending' &&
-    hotspotEvaluation.reason === 'insufficient-dwell'
-  const clueDiscovered = activeHotspot
-    ? discoveredSet.has(activeHotspot.clueId)
-    : false
+    hotspotEvaluation?.status === 'discovered' ||
+    (hotspotEvaluation?.status === 'pending' &&
+      hotspotEvaluation.reason === 'insufficient-dwell')
+  const hotspotFeedbackKey = (() => {
+    if (hotspotAligned) return 'ui.hotspotSignal'
+    if (hotspotEvaluation?.status !== 'pending') return 'ui.hotspotBlocked'
+    if (hotspotEvaluation.reason === 'too-close') return 'ui.hotspotTooClose'
+    if (hotspotEvaluation.reason === 'too-far') return 'ui.hotspotTooFar'
+    if (hotspotEvaluation.reason === 'wrong-angle')
+      return 'ui.hotspotWrongAngle'
+    if (hotspotEvaluation.reason === 'missing-prerequisite') {
+      return 'ui.hotspotMissingPrerequisite'
+    }
+    return 'ui.hotspotBlocked'
+  })()
 
   const issueCommand = (type: ViewCommand['type']) => {
     setCommand((previous) => ({ sequence: previous.sequence + 1, type }))
   }
+
+  const changeTool = useCallback(
+    (toolId: (typeof investigationTools)[number]['id']) => {
+      observationStartedAt.current = null
+      setIsObserving(false)
+      setDwellMs(0)
+      selectTool(toolId)
+    },
+    [selectTool],
+  )
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -135,15 +170,15 @@ export function InvestigationWorkbench({
       const tool = investigationTools.find(
         ({ shortcut }) => shortcut === event.key,
       )
-      if (tool) selectTool(tool.id)
+      if (tool) changeTool(tool.id)
     }
 
     window.addEventListener('keydown', handleShortcut)
     return () => window.removeEventListener('keydown', handleShortcut)
-  }, [selectTool])
+  }, [changeTool])
 
   useEffect(() => {
-    if (!isObserving || !activeHotspot || clueDiscovered) return
+    if (!isObserving || !activeHotspot) return
 
     const startedAt = observationStartedAt.current ?? performance.now()
     observationStartedAt.current = startedAt
@@ -160,6 +195,7 @@ export function InvestigationWorkbench({
         discoverClue(activeHotspot.clueId)
         observationStartedAt.current = null
         setIsObserving(false)
+        setDwellMs(0)
         window.clearInterval(interval)
       } else if (result.reason !== 'insufficient-dwell') {
         observationStartedAt.current = null
@@ -173,7 +209,6 @@ export function InvestigationWorkbench({
   }, [
     activeHotspot,
     cameraObservation,
-    clueDiscovered,
     discoveredSet,
     discoverClue,
     isObserving,
@@ -188,7 +223,6 @@ export function InvestigationWorkbench({
   }
 
   const endObservation = () => {
-    if (clueDiscovered) return
     observationStartedAt.current = null
     setIsObserving(false)
     setDwellMs(0)
@@ -286,13 +320,18 @@ export function InvestigationWorkbench({
         </aside>
       ) : null}
 
-      {authoringEnabled && activeHotspot ? (
+      {authoringEnabled && authoringHotspotDefinition ? (
         <AuthoringPanel
-          clueId={activeHotspot.clueId}
+          clueId={authoringHotspotDefinition.clueId}
           hotspot={authoringHotspot}
-          hotspotId={activeHotspot.id}
+          hotspotId={authoringHotspotDefinition.id}
           observation={cameraObservation}
-          onChange={setAuthoringHotspot}
+          onChange={(nextHotspot) =>
+            setAuthoringOverrides((previous) => ({
+              ...previous,
+              [authoringHotspotDefinition.id]: nextHotspot,
+            }))
+          }
         />
       ) : null}
 
@@ -322,19 +361,17 @@ export function InvestigationWorkbench({
               command={command}
               onObservationChange={updateCameraObservation}
               authoringHotspot={
-                authoringEnabled && activeHotspot ? authoringHotspot : undefined
+                authoringEnabled && authoringHotspotDefinition
+                  ? authoringHotspot
+                  : undefined
               }
             />
-            {selectedTool === 'side-light' && !clueDiscovered ? (
+            {activeHotspot ? (
               <button
                 className={`${styles.hotspotSignal} ${hotspotAligned ? styles.hotspotAligned : ''}`}
                 disabled={!hotspotAligned}
                 type="button"
-                aria-label={
-                  hotspotAligned
-                    ? text('ui.hotspotSignal')
-                    : text('ui.hotspotBlocked')
-                }
+                aria-label={text(hotspotFeedbackKey)}
                 style={
                   {
                     '--dwell-progress': `${Math.min(100, (dwellMs / (activeHotspot?.dwellMs ?? 1)) * 100)}%`,
@@ -346,11 +383,7 @@ export function InvestigationWorkbench({
                 onMouseLeave={endObservation}
               >
                 <span aria-hidden="true" />
-                <small>
-                  {hotspotAligned
-                    ? text('ui.hotspotSignal')
-                    : text('ui.hotspotBlocked')}
-                </small>
+                <small>{text(hotspotFeedbackKey)}</small>
               </button>
             ) : null}
             <div className={styles.scanReadout} aria-hidden="true">
@@ -430,13 +463,15 @@ export function InvestigationWorkbench({
           <section className={styles.findings}>
             <div>
               <span>{text('ui.findings')}</span>
-              <strong>{clueDiscovered ? '1' : '0'} / 4</strong>
+              <strong>
+                {currentDiscoveredClues.length} / {totalEvidenceClues}
+              </strong>
             </div>
-            {clueDiscovered && activeClue ? (
+            {latestDiscoveredClue ? (
               <div className={styles.recordedClue} role="status">
                 <span>{text('ui.clueRecorded')}</span>
-                <strong>{text(activeClue.titleKey)}</strong>
-                <p>{text(activeClue.descriptionKey)}</p>
+                <strong>{text(latestDiscoveredClue.titleKey)}</strong>
+                <p>{text(latestDiscoveredClue.descriptionKey)}</p>
               </div>
             ) : (
               <p>{text('ui.noFindings')}</p>
@@ -475,7 +510,7 @@ export function InvestigationWorkbench({
               type="button"
               aria-pressed={selectedTool === id}
               className={selectedTool === id ? styles.activeTool : undefined}
-              onClick={() => selectTool(id)}
+              onClick={() => changeTool(id)}
             >
               <Icon aria-hidden="true" size={18} />
               <span>{name}</span>
