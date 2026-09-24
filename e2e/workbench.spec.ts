@@ -36,3 +36,16 @@ test('数字快捷键可切换调查工具', async ({ page }) => {
     'true',
   )
 })
+
+test('使用侧光持续观察可记录桌腿磨痕', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+
+  await page.getByRole('button', { name: /侧光/ }).click()
+  const signal = page.getByRole('button', { name: '反射异常 · 保持观察' })
+  await expect(signal).toBeEnabled()
+  await signal.hover()
+
+  await expect(page.getByText('桌腿新鲜磨痕')).toBeVisible({ timeout: 4000 })
+  await expect(page.getByText('1 / 4')).toBeVisible()
+})

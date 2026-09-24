@@ -9,13 +9,25 @@ import {
   RotateCw,
   ScanLine,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { Link } from 'react-router-dom'
 
 import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
+import { evaluateHotspot } from '../../engine/hotspots/evaluate-hotspot'
 import { useGameStore } from '../../state/game-store'
-import { EvidenceViewport, type ViewCommand } from './EvidenceViewport'
+import {
+  EvidenceViewport,
+  type CameraObservation,
+  type ViewCommand,
+} from './EvidenceViewport'
 import styles from './InvestigationWorkbench.module.css'
 import { investigationTools } from './tool-definitions'
 
@@ -33,8 +45,19 @@ export function InvestigationWorkbench({
   const selectTool = useGameStore((state) => state.selectTool)
   const currentEvidenceId = useGameStore((state) => state.currentEvidenceId)
   const setCurrentEvidence = useGameStore((state) => state.setCurrentEvidence)
+  const discoveredClueIds = useGameStore((state) => state.discoveredClueIds)
+  const discoverClue = useGameStore((state) => state.discoverClue)
   const [command, setCommand] = useState<ViewCommand>(initialCommand)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [cameraObservation, setCameraObservation] = useState<CameraObservation>(
+    {
+      cameraDistance: 0,
+      viewAngleDeg: 180,
+    },
+  )
+  const [isObserving, setIsObserving] = useState(false)
+  const [dwellMs, setDwellMs] = useState(0)
+  const observationStartedAt = useRef<number | null>(null)
   const text = useCallback(
     (key: string) => translate(messages, key),
     [messages],
@@ -50,6 +73,28 @@ export function InvestigationWorkbench({
   const activeTool =
     investigationTools.find(({ id }) => id === selectedTool) ??
     investigationTools[0]
+  const activeHotspot = currentEvidence?.hotspots[0]
+  const activeClue = caseDefinition.clues.find(
+    ({ id }) => id === activeHotspot?.clueId,
+  )
+  const discoveredSet = useMemo(
+    () => new Set(discoveredClueIds),
+    [discoveredClueIds],
+  )
+  const hotspotEvaluation = activeHotspot
+    ? evaluateHotspot(activeHotspot, {
+        selectedTool,
+        ...cameraObservation,
+        dwellMs,
+        discoveredClueIds: discoveredSet,
+      })
+    : null
+  const hotspotAligned =
+    hotspotEvaluation?.status === 'pending' &&
+    hotspotEvaluation.reason === 'insufficient-dwell'
+  const clueDiscovered = activeHotspot
+    ? discoveredSet.has(activeHotspot.clueId)
+    : false
 
   const issueCommand = (type: ViewCommand['type']) => {
     setCommand((previous) => ({ sequence: previous.sequence + 1, type }))
@@ -67,6 +112,70 @@ export function InvestigationWorkbench({
     window.addEventListener('keydown', handleShortcut)
     return () => window.removeEventListener('keydown', handleShortcut)
   }, [selectTool])
+
+  useEffect(() => {
+    if (!isObserving || !activeHotspot || clueDiscovered) return
+
+    const startedAt = observationStartedAt.current ?? performance.now()
+    observationStartedAt.current = startedAt
+    const interval = window.setInterval(() => {
+      const nextDwellMs = Math.round(performance.now() - startedAt)
+      setDwellMs(nextDwellMs)
+      const result = evaluateHotspot(activeHotspot, {
+        selectedTool,
+        ...cameraObservation,
+        dwellMs: nextDwellMs,
+        discoveredClueIds: discoveredSet,
+      })
+      if (result.status === 'discovered') {
+        discoverClue(activeHotspot.clueId)
+        observationStartedAt.current = null
+        setIsObserving(false)
+        window.clearInterval(interval)
+      } else if (result.reason !== 'insufficient-dwell') {
+        observationStartedAt.current = null
+        setDwellMs(0)
+        setIsObserving(false)
+        window.clearInterval(interval)
+      }
+    }, 80)
+
+    return () => window.clearInterval(interval)
+  }, [
+    activeHotspot,
+    cameraObservation,
+    clueDiscovered,
+    discoveredSet,
+    discoverClue,
+    isObserving,
+    selectedTool,
+  ])
+
+  const beginObservation = () => {
+    if (!hotspotAligned) return
+    observationStartedAt.current = performance.now()
+    setDwellMs(0)
+    setIsObserving(true)
+  }
+
+  const endObservation = () => {
+    if (clueDiscovered) return
+    observationStartedAt.current = null
+    setIsObserving(false)
+    setDwellMs(0)
+  }
+
+  const updateCameraObservation = useCallback(
+    (nextObservation: CameraObservation) => {
+      setCameraObservation((previous) =>
+        previous.cameraDistance === nextObservation.cameraDistance &&
+        previous.viewAngleDeg === nextObservation.viewAngleDeg
+          ? previous
+          : nextObservation,
+      )
+    },
+    [],
+  )
 
   if (!currentEvidence || !activeTool) {
     return <p>案件物证数据不完整。</p>
@@ -143,7 +252,39 @@ export function InvestigationWorkbench({
           </div>
 
           <div className={styles.canvasFrame}>
-            <EvidenceViewport selectedTool={selectedTool} command={command} />
+            <EvidenceViewport
+              selectedTool={selectedTool}
+              command={command}
+              onObservationChange={updateCameraObservation}
+            />
+            {selectedTool === 'side-light' && !clueDiscovered ? (
+              <button
+                className={`${styles.hotspotSignal} ${hotspotAligned ? styles.hotspotAligned : ''}`}
+                disabled={!hotspotAligned}
+                type="button"
+                aria-label={
+                  hotspotAligned
+                    ? text('ui.hotspotSignal')
+                    : text('ui.hotspotBlocked')
+                }
+                style={
+                  {
+                    '--dwell-progress': `${Math.min(100, (dwellMs / (activeHotspot?.dwellMs ?? 1)) * 100)}%`,
+                  } as CSSProperties
+                }
+                onBlur={endObservation}
+                onFocus={beginObservation}
+                onMouseEnter={beginObservation}
+                onMouseLeave={endObservation}
+              >
+                <span aria-hidden="true" />
+                <small>
+                  {hotspotAligned
+                    ? text('ui.hotspotSignal')
+                    : text('ui.hotspotBlocked')}
+                </small>
+              </button>
+            ) : null}
             <div className={styles.scanReadout} aria-hidden="true">
               <span>SCAN / LIVE</span>
               <span>ROTATION: FREE</span>
@@ -224,9 +365,17 @@ export function InvestigationWorkbench({
           <section className={styles.findings}>
             <div>
               <span>{text('ui.findings')}</span>
-              <strong>0 / 4</strong>
+              <strong>{clueDiscovered ? '1' : '0'} / 4</strong>
             </div>
-            <p>{text('ui.noFindings')}</p>
+            {clueDiscovered && activeClue ? (
+              <div className={styles.recordedClue} role="status">
+                <span>{text('ui.clueRecorded')}</span>
+                <strong>{text(activeClue.titleKey)}</strong>
+                <p>{text(activeClue.descriptionKey)}</p>
+              </div>
+            ) : (
+              <p>{text('ui.noFindings')}</p>
+            )}
           </section>
         </aside>
       </div>

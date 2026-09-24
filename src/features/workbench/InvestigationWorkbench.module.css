@@ -205,6 +205,81 @@
   color: var(--color-success);
 }
 
+.hotspotSignal {
+  --dwell-progress: 0%;
+  position: absolute;
+  z-index: 3;
+  bottom: 28%;
+  left: 30%;
+  display: grid;
+  width: 7rem;
+  min-height: 4rem;
+  justify-items: center;
+  border: 0;
+  color: var(--color-text-subtle);
+  background: transparent;
+  cursor: not-allowed;
+  gap: 0.4rem;
+}
+
+.hotspotSignal > span {
+  position: relative;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.hotspotSignal > span::before,
+.hotspotSignal > span::after {
+  position: absolute;
+  border-radius: 50%;
+  content: '';
+}
+
+.hotspotSignal > span::before {
+  inset: 0.3rem;
+  background: currentColor;
+}
+
+.hotspotSignal > span::after {
+  inset: -0.35rem;
+  border: 1px solid currentColor;
+  opacity: 0.4;
+}
+
+.hotspotSignal small {
+  padding: 0.25rem 0.4rem;
+  color: inherit;
+  background: rgb(11 13 14 / 0.82);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  white-space: nowrap;
+}
+
+.hotspotSignal::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--color-warning) var(--dwell-progress),
+    var(--color-border) var(--dwell-progress)
+  );
+  content: '';
+}
+
+.hotspotAligned {
+  color: var(--color-warning);
+  cursor: crosshair;
+}
+
+.hotspotAligned > span::after {
+  animation: signal-pulse 1.25s var(--ease-out) infinite;
+}
+
 .viewControls {
   display: flex;
   align-items: stretch;
@@ -374,6 +449,46 @@
   line-height: 1.55;
 }
 
+.recordedClue {
+  display: block !important;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.recordedClue span,
+.recordedClue strong {
+  display: block;
+}
+
+.recordedClue span {
+  color: var(--color-success);
+}
+
+.recordedClue strong {
+  margin-top: 0.4rem;
+  color: var(--color-text-strong);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 570;
+}
+
+.recordedClue p {
+  color: var(--color-text-muted);
+}
+
+@keyframes signal-pulse {
+  from {
+    opacity: 0.7;
+    transform: scale(0.75);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
 .toolDock {
   position: relative;
   z-index: 4;
@@ -534,6 +649,11 @@
 
   .scanReadout span:not(:first-child) {
     display: none;
+  }
+
+  .hotspotSignal {
+    bottom: 30%;
+    left: 18%;
   }
 
   .viewControls {

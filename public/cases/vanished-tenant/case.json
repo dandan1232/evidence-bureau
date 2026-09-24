@@ -31,7 +31,24 @@
         "minPolarAngleDeg": 15,
         "maxPolarAngleDeg": 165
       },
-      "hotspots": [],
+      "hotspots": [
+        {
+          "id": "desk-leg-scrape-hotspot",
+          "clueId": "desk-leg-fresh-scrape",
+          "shape": {
+            "type": "sphere",
+            "center": [-1.27, 0.06, 0.57],
+            "radius": 0.18
+          },
+          "requiredTool": "side-light",
+          "surfaceNormal": [0, 0, 1],
+          "maxViewAngleDeg": 75,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 1200,
+          "prerequisites": []
+        }
+      ],
       "assetBudget": { "maxBytes": 12582912, "maxTriangles": 180000 }
     },
     {
@@ -75,7 +92,15 @@
       "assetBudget": { "maxBytes": 6291456, "maxTriangles": 80000 }
     }
   ],
-  "clues": [],
+  "clues": [
+    {
+      "id": "desk-leg-fresh-scrape",
+      "kind": "observation",
+      "evidenceId": "moved-desk",
+      "titleKey": "clue.desk-leg-scrape.title",
+      "descriptionKey": "clue.desk-leg-scrape.description"
+    }
+  ],
   "statements": [],
   "documents": [],
   "deductions": [],

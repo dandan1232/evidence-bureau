@@ -9,6 +9,7 @@ describe('game store', () => {
     expect(useGameStore.getState()).toMatchObject({
       currentEvidenceId: 'moved-desk',
       selectedTool: 'white-light',
+      discoveredClueIds: [],
     })
   })
 
@@ -18,5 +19,14 @@ describe('game store', () => {
 
     useGameStore.getState().resetInvestigation()
     expect(useGameStore.getState().selectedTool).toBe('white-light')
+  })
+
+  it('记录线索且不产生重复项', () => {
+    useGameStore.getState().discoverClue('desk-leg-fresh-scrape')
+    useGameStore.getState().discoverClue('desk-leg-fresh-scrape')
+
+    expect(useGameStore.getState().discoveredClueIds).toEqual([
+      'desk-leg-fresh-scrape',
+    ])
   })
 })

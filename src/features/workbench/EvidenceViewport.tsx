@@ -1,6 +1,7 @@
 import { ContactShadows, Grid, OrbitControls } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Vector3 } from 'three'
 
 import type { ToolId } from '../../cases/schema'
 import styles from './EvidenceViewport.module.css'
@@ -13,11 +14,18 @@ export type ViewCommand = {
 type EvidenceViewportProps = {
   selectedTool: ToolId
   command: ViewCommand
+  onObservationChange: (observation: CameraObservation) => void
+}
+
+export type CameraObservation = {
+  cameraDistance: number
+  viewAngleDeg: number
 }
 
 export function EvidenceViewport({
   selectedTool,
   command,
+  onObservationChange,
 }: EvidenceViewportProps) {
   const [webGLAvailable] = useState(supportsWebGL)
 
@@ -64,7 +72,10 @@ export function EvidenceViewport({
           sectionSize={1}
           sectionThickness={0.8}
         />
-        <CameraController command={command} />
+        <CameraController
+          command={command}
+          onObservationChange={onObservationChange}
+        />
       </Canvas>
 
       {selectedTool === 'measurement' ? (
@@ -188,12 +199,44 @@ function DeskEvidence({ tool }: { tool: ToolId }) {
   )
 }
 
-function CameraController({ command }: { command: ViewCommand }) {
+function CameraController({
+  command,
+  onObservationChange,
+}: {
+  command: ViewCommand
+  onObservationChange: (observation: CameraObservation) => void
+}) {
   const { camera } = useThree()
   const [target] = useState(() => ({ x: 0, y: 0.7, z: 0 }))
+  const hotspotPosition = useMemo(
+    () =>
+      new Vector3(-1.27, 0.11, 0.57).applyAxisAngle(
+        new Vector3(0, 1, 0),
+        -0.24,
+      ),
+    [],
+  )
+  const hotspotNormal = useMemo(
+    () => new Vector3(0, 0, 1).applyAxisAngle(new Vector3(0, 1, 0), -0.24),
+    [],
+  )
+
+  const reportObservation = useCallback(() => {
+    const hotspotToCamera = camera.position.clone().sub(hotspotPosition)
+    const cameraDistance = hotspotToCamera.length()
+    const viewAngleDeg =
+      (hotspotToCamera.normalize().angleTo(hotspotNormal) * 180) / Math.PI
+    onObservationChange({
+      cameraDistance: Math.round(cameraDistance * 10) / 10,
+      viewAngleDeg: Math.round(viewAngleDeg),
+    })
+  }, [camera, hotspotNormal, hotspotPosition, onObservationChange])
 
   useEffect(() => {
-    if (command.sequence === 0) return
+    if (command.sequence === 0) {
+      reportObservation()
+      return
+    }
 
     if (command.type === 'reset') {
       camera.position.set(4.8, 3.2, 5.2)
@@ -217,7 +260,8 @@ function CameraController({ command }: { command: ViewCommand }) {
     if (distance > 9) camera.position.setLength(9)
     camera.lookAt(target.x, target.y, target.z)
     camera.updateProjectionMatrix()
-  }, [camera, command, target])
+    reportObservation()
+  }, [camera, command, reportObservation, target])
 
   return (
     <OrbitControls
@@ -227,6 +271,7 @@ function CameraController({ command }: { command: ViewCommand }) {
       maxPolarAngle={Math.PI * 0.92}
       minDistance={2.4}
       minPolarAngle={Math.PI * 0.08}
+      onEnd={reportObservation}
       target={[target.x, target.y, target.z]}
     />
   )
