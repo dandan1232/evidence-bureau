@@ -236,6 +236,39 @@ test('三组物证可分别形成规则驱动的中间结论', async ({ page }) 
   const board = page.getByRole('region', { name: '证据链推理板' })
   await expect(board).toBeVisible()
   await board.getByRole('button', { name: '全部加入' }).click()
+
+  const relations = [
+    {
+      from: '桌腿新鲜磨痕',
+      kind: '支持',
+      to: '桌面尺寸恰好覆盖检修口',
+    },
+    {
+      from: '被擦除的延时标记',
+      kind: '解释',
+      to: '延时弹簧仍处于张紧位',
+    },
+    {
+      from: '被磨浅的设施编号',
+      kind: '对应位置',
+      to: '齿形尺寸与房门锁不符',
+    },
+  ]
+
+  for (const relation of relations) {
+    await board
+      .getByRole('combobox', { name: '起点证据' })
+      .selectOption({ label: relation.from })
+    await board
+      .getByRole('combobox', { name: '关系类型' })
+      .selectOption({ label: relation.kind })
+    await board
+      .getByRole('combobox', { name: '终点证据' })
+      .selectOption({ label: relation.to })
+    await board.getByRole('button', { name: '添加关系' }).click()
+  }
+
+  await expect(board.getByText('3 条关系')).toBeVisible()
   await board.getByRole('button', { name: '验证证据链' }).click()
 
   await expect(
@@ -248,6 +281,24 @@ test('三组物证可分别形成规则驱动的中间结论', async ({ page }) 
     board.getByRole('heading', { name: '钥匙属于检修设施' }),
   ).toBeVisible()
   await expect(board.getByText('3 条中间结论已成立')).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = localStorage.getItem('evidence-bureau:save:vanished-tenant')
+        if (!raw) return 0
+        const save = JSON.parse(raw) as {
+          payload?: { deductionRelations?: unknown[] }
+        }
+        return save.payload?.deductionRelations?.length ?? 0
+      }),
+    )
+    .toBe(3)
+
+  await page.reload()
+  await page.getByRole('button', { name: '推理' }).click()
+  await expect(
+    page.getByRole('region', { name: '证据链推理板' }).getByText('3 条关系'),
+  ).toBeVisible()
 })
 
 test('刷新页面后恢复已发现线索和当前工具', async ({ page }) => {

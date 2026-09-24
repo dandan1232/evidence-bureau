@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { ToolIdSchema } from '../cases/schema'
+import { RelationKindSchema, ToolIdSchema } from '../cases/schema'
 
 const CURRENT_SAVE_SCHEMA_VERSION = 1
 const idSchema = z
@@ -12,6 +12,15 @@ export const SavedProgressSchema = z.object({
   selectedTool: ToolIdSchema,
   discoveredClueIds: z.array(idSchema),
   deductionNodeIds: z.array(idSchema),
+  deductionRelations: z
+    .array(
+      z.object({
+        from: idSchema,
+        to: idSchema,
+        kind: RelationKindSchema,
+      }),
+    )
+    .default([]),
   unlockedConclusionIds: z.array(idSchema),
 })
 

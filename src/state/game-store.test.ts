@@ -11,6 +11,7 @@ describe('game store', () => {
       selectedTool: 'white-light',
       discoveredClueIds: [],
       deductionNodeIds: [],
+      deductionRelations: [],
       unlockedConclusionIds: [],
     })
   })
@@ -42,5 +43,20 @@ describe('game store', () => {
       deductionNodeIds: ['desk-leg-fresh-scrape'],
       unlockedConclusionIds: ['desk-was-moved'],
     })
+  })
+
+  it('保存推理关系且不产生重复项', () => {
+    const relation = {
+      from: 'desk-leg-fresh-scrape',
+      to: 'desk-access-clearance',
+      kind: 'supports' as const,
+    }
+    useGameStore.getState().addDeductionRelation(relation)
+    useGameStore.getState().addDeductionRelation(relation)
+
+    expect(useGameStore.getState().deductionRelations).toEqual([relation])
+
+    useGameStore.getState().removeDeductionRelation(relation)
+    expect(useGameStore.getState().deductionRelations).toEqual([])
   })
 })

@@ -32,6 +32,7 @@ export function useGamePersistence(caseId: string, caseContentVersion: string) {
           selectedTool: state.selectedTool,
           discoveredClueIds: state.discoveredClueIds,
           deductionNodeIds: state.deductionNodeIds,
+          deductionRelations: state.deductionRelations,
           unlockedConclusionIds: state.unlockedConclusionIds,
         }
         const result = saveCaseProgress(

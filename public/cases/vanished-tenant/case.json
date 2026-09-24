@@ -415,7 +415,13 @@
     {
       "id": "desk-moved-rule",
       "requiredNodes": ["desk-leg-fresh-scrape", "desk-access-clearance"],
-      "requiredRelations": [],
+      "requiredRelations": [
+        {
+          "from": "desk-leg-fresh-scrape",
+          "to": "desk-access-clearance",
+          "kind": "supports"
+        }
+      ],
       "unlocksConclusionId": "desk-was-moved",
       "feedbackKey": "deduction.desk-moved.feedback"
     },
@@ -425,7 +431,13 @@
         "camera-erased-delay-mark",
         "camera-timer-spring-tension"
       ],
-      "requiredRelations": [],
+      "requiredRelations": [
+        {
+          "from": "camera-erased-delay-mark",
+          "to": "camera-timer-spring-tension",
+          "kind": "explains"
+        }
+      ],
       "unlocksConclusionId": "camera-timeline-was-staged",
       "feedbackKey": "deduction.camera-timeline.feedback"
     },
@@ -435,7 +447,13 @@
         "key-hidden-facility-number",
         "key-lock-profile-mismatch"
       ],
-      "requiredRelations": [],
+      "requiredRelations": [
+        {
+          "from": "key-hidden-facility-number",
+          "to": "key-lock-profile-mismatch",
+          "kind": "locates"
+        }
+      ],
       "unlocksConclusionId": "key-opens-maintenance-access",
       "feedbackKey": "deduction.key-maintenance-access.feedback"
     }

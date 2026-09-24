@@ -13,6 +13,7 @@ const progress: SavedProgress = {
   selectedTool: 'side-light',
   discoveredClueIds: ['desk-leg-fresh-scrape'],
   deductionNodeIds: ['desk-leg-fresh-scrape'],
+  deductionRelations: [],
   unlockedConclusionIds: ['desk-was-moved'],
 }
 
@@ -54,6 +55,30 @@ describe('case save store', () => {
     })
     expect(storage.getItem(key)).toBeNull()
     expect(storage.getItem(`${key}:corrupt:42`)).toBe('{broken json')
+  })
+
+  it('为旧存档补充空的推理关系', () => {
+    const storage = createMemoryStorage()
+    const key = caseSaveKey('vanished-tenant')
+    const legacyProgress: Record<string, unknown> = { ...progress }
+    delete legacyProgress.deductionRelations
+    storage.setItem(
+      key,
+      JSON.stringify({
+        saveSchemaVersion: 1,
+        savedAt: '2026-09-24T03:00:00.000Z',
+        caseId: 'vanished-tenant',
+        caseContentVersion: '0.1.0',
+        payload: legacyProgress,
+      }),
+    )
+
+    expect(loadCaseProgress(storage, 'vanished-tenant', '0.1.0')).toMatchObject(
+      {
+        status: 'restored',
+        progress: { deductionRelations: [] },
+      },
+    )
   })
 
   it('内容版本不匹配时不恢复旧进度', () => {
