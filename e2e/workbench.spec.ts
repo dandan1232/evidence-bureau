@@ -202,21 +202,52 @@ test('已发现线索可在档案中查阅来源与说明', async ({ page }) => 
   await expect(page.getByText('记录已核验')).toBeVisible()
 })
 
-test('已归档线索可形成中间推理结论', async ({ page }) => {
+test('三组物证可分别形成规则驱动的中间结论', async ({ page }) => {
   await page.goto('/#/cases/vanished-tenant/investigation')
   await expect(page.getByTestId('evidence-viewport')).toBeVisible()
-  await discoverDeskLegScrape(page)
+
+  const discover = async (tool: string, clue: string) => {
+    await page
+      .getByRole('toolbar', { name: '调查工具' })
+      .getByRole('button', { name: new RegExp(tool) })
+      .click()
+    const signal = page.getByRole('button', {
+      name: '检测到异常 · 保持观察',
+    })
+    await expect(signal).toBeEnabled()
+    await signal.hover()
+    await expect(page.getByRole('status').getByText(clue)).toBeVisible({
+      timeout: 4000,
+    })
+  }
+
+  await discover('侧光', '桌腿新鲜磨痕')
+  await discover('测量', '桌面尺寸恰好覆盖检修口')
+
+  await page.getByRole('button', { name: /损坏的旧相机/ }).click()
+  await discover('紫外', '被擦除的延时标记')
+  await discover('线框', '延时弹簧仍处于张紧位')
+
+  await page.getByRole('button', { name: /黄铜钥匙/ }).click()
+  await discover('白光', '被磨浅的设施编号')
+  await discover('测量', '齿形尺寸与房门锁不符')
 
   await page.getByRole('button', { name: '推理' }).click()
   const board = page.getByRole('region', { name: '证据链推理板' })
   await expect(board).toBeVisible()
-  await board.getByRole('button', { name: /加入推理板/ }).click()
+  await board.getByRole('button', { name: '全部加入' }).click()
   await board.getByRole('button', { name: '验证证据链' }).click()
 
   await expect(
     board.getByRole('heading', { name: '桌子近期被移动' }),
   ).toBeVisible()
-  await expect(board.getByText('规则匹配 · 临时判断成立')).toBeVisible()
+  await expect(
+    board.getByRole('heading', { name: '相机制造了错误时间线' }),
+  ).toBeVisible()
+  await expect(
+    board.getByRole('heading', { name: '钥匙属于检修设施' }),
+  ).toBeVisible()
+  await expect(board.getByText('3 条中间结论已成立')).toBeVisible()
 })
 
 test('刷新页面后恢复已发现线索和当前工具', async ({ page }) => {

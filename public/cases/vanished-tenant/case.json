@@ -360,6 +360,18 @@
       "kind": "conclusion",
       "titleKey": "conclusion.desk-was-moved.title",
       "descriptionKey": "conclusion.desk-was-moved.description"
+    },
+    {
+      "id": "camera-timeline-was-staged",
+      "kind": "conclusion",
+      "titleKey": "conclusion.camera-timeline.title",
+      "descriptionKey": "conclusion.camera-timeline.description"
+    },
+    {
+      "id": "key-opens-maintenance-access",
+      "kind": "conclusion",
+      "titleKey": "conclusion.key-maintenance-access.title",
+      "descriptionKey": "conclusion.key-maintenance-access.description"
     }
   ],
   "statements": [
@@ -402,10 +414,30 @@
   "deductions": [
     {
       "id": "desk-moved-rule",
-      "requiredNodes": ["desk-leg-fresh-scrape"],
+      "requiredNodes": ["desk-leg-fresh-scrape", "desk-access-clearance"],
       "requiredRelations": [],
       "unlocksConclusionId": "desk-was-moved",
       "feedbackKey": "deduction.desk-moved.feedback"
+    },
+    {
+      "id": "camera-timeline-rule",
+      "requiredNodes": [
+        "camera-erased-delay-mark",
+        "camera-timer-spring-tension"
+      ],
+      "requiredRelations": [],
+      "unlocksConclusionId": "camera-timeline-was-staged",
+      "feedbackKey": "deduction.camera-timeline.feedback"
+    },
+    {
+      "id": "key-maintenance-access-rule",
+      "requiredNodes": [
+        "key-hidden-facility-number",
+        "key-lock-profile-mismatch"
+      ],
+      "requiredRelations": [],
+      "unlocksConclusionId": "key-opens-maintenance-access",
+      "feedbackKey": "deduction.key-maintenance-access.feedback"
     }
   ],
   "hints": [],

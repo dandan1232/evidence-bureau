@@ -29,6 +29,7 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
   const [feedback, setFeedback] = useState<'idle' | 'incomplete' | 'matched'>(
     'idle',
   )
+  const [matchedCount, setMatchedCount] = useState(0)
   const text = (key: string) => translate(messages, key)
 
   const availableClues = caseDefinition.clues.filter(
@@ -37,25 +38,63 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
   const placedClues = availableClues.filter(({ id }) =>
     deductionNodeIds.includes(id),
   )
-  const rule = caseDefinition.deductions[0]
-  const conclusion = caseDefinition.clues.find(
-    ({ id }) => id === rule?.unlocksConclusionId,
-  )
-  const conclusionUnlocked = conclusion
-    ? unlockedConclusionIds.includes(conclusion.id)
-    : false
+  const conclusions = caseDefinition.deductions
+    .map((rule) =>
+      caseDefinition.clues.find(({ id }) => id === rule.unlocksConclusionId),
+    )
+    .filter((conclusion) => conclusion !== undefined)
 
   const verifyChain = () => {
-    if (!rule) return
-    const result = evaluateDeduction(rule, {
-      nodeIds: deductionNodeIds,
-      relations: [],
+    const matchedConclusionIds = caseDefinition.deductions.flatMap((rule) => {
+      const result = evaluateDeduction(rule, {
+        nodeIds: deductionNodeIds,
+        relations: [],
+      })
+      return result.status === 'matched' ? [result.conclusionId] : []
     })
-    if (result.status === 'matched') {
-      unlockConclusion(result.conclusionId)
-      setFeedback('matched')
-    } else {
-      setFeedback('incomplete')
+
+    matchedConclusionIds.forEach(unlockConclusion)
+    setMatchedCount(matchedConclusionIds.length)
+    setFeedback(matchedConclusionIds.length > 0 ? 'matched' : 'incomplete')
+  }
+
+  const addAllAvailableClues = () => {
+    availableClues.forEach(({ id }) => {
+      addDeductionNode(id)
+    })
+  }
+
+  const allAvailableCluesPlaced = availableClues.every(({ id }) =>
+    deductionNodeIds.includes(id),
+  )
+
+  const matchedFeedback = `${matchedCount} ${text('ui.rulesMatched')}`
+
+  const isConclusionUnlocked = (conclusionId: string) =>
+    unlockedConclusionIds.includes(conclusionId)
+
+  const feedbackText =
+    feedback === 'matched'
+      ? matchedFeedback
+      : feedback === 'incomplete'
+        ? text('ui.chainIncomplete')
+        : text('ui.provisionalReasoning')
+
+  const placedClueCount = placedClues.length
+  const conclusionCount = conclusions.length
+
+  if (conclusionCount === 0) {
+    return null
+  }
+
+  const availableClueCount = availableClues.length
+  const canAddAll = availableClueCount > 0 && !allAvailableCluesPlaced
+
+  const boardSummary = `${String(placedClueCount).padStart(2, '0')} NODES / ${String(conclusionCount).padStart(2, '0')} RULES`
+
+  const handleAddAll = () => {
+    if (canAddAll) {
+      addAllAvailableClues()
     }
   }
 
@@ -70,7 +109,7 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
           <h1 id="deduction-title">{text('ui.deductionTitle')}</h1>
           <span>{text('ui.deductionDescription')}</span>
         </div>
-        <strong>{String(placedClues.length).padStart(2, '0')} NODES</strong>
+        <strong>{boardSummary}</strong>
       </header>
 
       <div className={styles.boardLayout}>
@@ -81,6 +120,18 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
           <div className={styles.sectionTitle}>
             <span>01</span>
             <h2 id="source-tray-title">{text('ui.availableEvidence')}</h2>
+            <button
+              className={styles.addAllButton}
+              disabled={!canAddAll}
+              type="button"
+              onClick={handleAddAll}
+            >
+              {text(
+                allAvailableCluesPlaced
+                  ? 'ui.addedToBoard'
+                  : 'ui.addAllToBoard',
+              )}
+            </button>
           </div>
           <ul>
             {availableClues.map((clue) => {
@@ -124,42 +175,46 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
               </div>
             ) : (
               <>
-                {placedClues.map((clue) => (
-                  <article className={styles.evidenceNode} key={clue.id}>
-                    <span>VERIFIED OBSERVATION</span>
-                    <strong>{text(clue.titleKey)}</strong>
-                    <p>{text(clue.descriptionKey)}</p>
-                  </article>
-                ))}
+                <div className={styles.nodeColumn}>
+                  {placedClues.map((clue) => (
+                    <article className={styles.evidenceNode} key={clue.id}>
+                      <span>VERIFIED OBSERVATION</span>
+                      <strong>{text(clue.titleKey)}</strong>
+                      <p>{text(clue.descriptionKey)}</p>
+                    </article>
+                  ))}
+                </div>
                 <div className={styles.chainArrow} aria-hidden="true">
                   <ArrowRight size={20} />
                 </div>
-                <article
-                  className={`${styles.conclusionNode} ${conclusionUnlocked ? styles.unlockedConclusion : ''}`}
-                >
-                  <span>{text('ui.intermediateConclusion')}</span>
-                  {conclusionUnlocked && conclusion ? (
-                    <>
-                      <ShieldCheck aria-hidden="true" size={22} />
-                      <h3>{text(conclusion.titleKey)}</h3>
-                      <p>{text(conclusion.descriptionKey)}</p>
-                    </>
-                  ) : (
-                    <strong>?</strong>
-                  )}
-                </article>
+                <div className={styles.conclusionColumn}>
+                  {conclusions.map((conclusion) => {
+                    const unlocked = isConclusionUnlocked(conclusion.id)
+                    return (
+                      <article
+                        className={`${styles.conclusionNode} ${unlocked ? styles.unlockedConclusion : ''}`}
+                        key={conclusion.id}
+                      >
+                        <span>{text('ui.intermediateConclusion')}</span>
+                        {unlocked ? (
+                          <>
+                            <ShieldCheck aria-hidden="true" size={22} />
+                            <h3>{text(conclusion.titleKey)}</h3>
+                            <p>{text(conclusion.descriptionKey)}</p>
+                          </>
+                        ) : (
+                          <strong>?</strong>
+                        )}
+                      </article>
+                    )
+                  })}
+                </div>
               </>
             )}
           </div>
 
           <footer className={styles.verifyBar}>
-            <p>
-              {feedback === 'matched'
-                ? text('ui.ruleMatched')
-                : feedback === 'incomplete'
-                  ? text('ui.chainIncomplete')
-                  : text('ui.provisionalReasoning')}
-            </p>
+            <p>{feedbackText}</p>
             <button
               disabled={placedClues.length === 0}
               type="button"
