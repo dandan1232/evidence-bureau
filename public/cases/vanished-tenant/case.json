@@ -153,7 +153,72 @@
         "minPolarAngleDeg": 5,
         "maxPolarAngleDeg": 175
       },
-      "hotspots": [],
+      "hotspots": [
+        {
+          "id": "key-facility-number-hotspot",
+          "clueId": "key-hidden-facility-number",
+          "shape": {
+            "type": "sphere",
+            "center": [0.1, 0.19, 0.13],
+            "radius": 0.28
+          },
+          "requiredTool": "white-light",
+          "surfaceNormal": [0, 0, 1],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 700,
+          "prerequisites": []
+        },
+        {
+          "id": "key-side-wear-hotspot",
+          "clueId": "key-side-edge-wear",
+          "shape": {
+            "type": "sphere",
+            "center": [0.55, -0.19, 0],
+            "radius": 0.32
+          },
+          "requiredTool": "side-light",
+          "surfaceNormal": [0, -1, 0],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 800,
+          "prerequisites": []
+        },
+        {
+          "id": "key-mineral-residue-hotspot",
+          "clueId": "key-mineral-residue",
+          "shape": {
+            "type": "sphere",
+            "center": [-0.15, 0.18, 0.13],
+            "radius": 0.35
+          },
+          "requiredTool": "ultraviolet",
+          "surfaceNormal": [0, 0, 1],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 900,
+          "prerequisites": []
+        },
+        {
+          "id": "key-tooth-profile-hotspot",
+          "clueId": "key-lock-profile-mismatch",
+          "shape": {
+            "type": "sphere",
+            "center": [1.02, -0.24, 0],
+            "radius": 0.42
+          },
+          "requiredTool": "measurement",
+          "surfaceNormal": [0, 0, 1],
+          "maxViewAngleDeg": 180,
+          "minCameraDistance": 2.4,
+          "maxCameraDistance": 9,
+          "dwellMs": 900,
+          "prerequisites": []
+        }
+      ],
       "assetBudget": { "maxBytes": 6291456, "maxTriangles": 80000 }
     }
   ],
@@ -192,6 +257,34 @@
       "evidenceId": "damaged-camera",
       "titleKey": "clue.camera-timer-spring.title",
       "descriptionKey": "clue.camera-timer-spring.description"
+    },
+    {
+      "id": "key-hidden-facility-number",
+      "kind": "observation",
+      "evidenceId": "brass-key",
+      "titleKey": "clue.key-facility-number.title",
+      "descriptionKey": "clue.key-facility-number.description"
+    },
+    {
+      "id": "key-side-edge-wear",
+      "kind": "observation",
+      "evidenceId": "brass-key",
+      "titleKey": "clue.key-side-wear.title",
+      "descriptionKey": "clue.key-side-wear.description"
+    },
+    {
+      "id": "key-mineral-residue",
+      "kind": "observation",
+      "evidenceId": "brass-key",
+      "titleKey": "clue.key-mineral-residue.title",
+      "descriptionKey": "clue.key-mineral-residue.description"
+    },
+    {
+      "id": "key-lock-profile-mismatch",
+      "kind": "observation",
+      "evidenceId": "brass-key",
+      "titleKey": "clue.key-profile-mismatch.title",
+      "descriptionKey": "clue.key-profile-mismatch.description"
     },
     {
       "id": "desk-was-moved",

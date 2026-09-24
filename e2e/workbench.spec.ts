@@ -71,6 +71,41 @@ test('旧相机可通过四种工具发现完整核心线索', async ({ page }) 
   await expect(page.getByText('调查方式 · 线框')).toBeVisible()
 })
 
+test('黄铜钥匙可通过四种工具确认通行用途', async ({ page }) => {
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await expect(page.getByTestId('evidence-viewport')).toBeVisible()
+  await page.getByRole('button', { name: /黄铜钥匙/ }).click()
+
+  const observations = [
+    { tool: '白光', clue: '被磨浅的设施编号' },
+    { tool: '侧光', clue: '集中在侧缘的磨损' },
+    { tool: '紫外', clue: '检修通道矿物残留' },
+    { tool: '测量', clue: '齿形尺寸与房门锁不符' },
+  ]
+
+  for (const observation of observations) {
+    await page
+      .getByRole('toolbar', { name: '调查工具' })
+      .getByRole('button', { name: new RegExp(observation.tool) })
+      .click()
+    const signal = page.getByRole('button', {
+      name: '检测到异常 · 保持观察',
+    })
+    await expect(signal).toBeEnabled()
+    await signal.hover()
+    await expect(
+      page.getByRole('status').getByText(observation.clue),
+    ).toBeVisible({ timeout: 4000 })
+  }
+
+  await expect(page.getByText('4 / 4')).toBeVisible()
+  await page.getByRole('button', { name: '档案' }).click()
+  await expect(
+    page.getByRole('heading', { name: '齿形尺寸与房门锁不符' }),
+  ).toBeVisible()
+  await expect(page.getByText('调查方式 · 测量')).toBeVisible()
+})
+
 test('数字快捷键可切换调查工具', async ({ page }) => {
   await page.goto('/#/cases/vanished-tenant/investigation')
   await expect(page.getByRole('toolbar', { name: '调查工具' })).toBeVisible()
