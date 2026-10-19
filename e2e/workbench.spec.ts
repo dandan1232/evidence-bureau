@@ -1,13 +1,68 @@
 import { expect, test, type Page } from '@playwright/test'
+import { PerspectiveCamera, Vector3 } from 'three'
 
 async function discoverDeskLegScrape(page: Page) {
-  await page.getByRole('button', { name: /侧光/ }).click()
-  const signal = page.getByRole('button', { name: '检测到异常 · 保持观察' })
-  await expect(signal).toBeEnabled()
-  await signal.hover()
+  await inspectDeskSurface(page, '侧光', [-0.585, 0.085, 0.29])
   await expect(page.getByRole('status').getByText('桌腿新鲜磨痕')).toBeVisible({
     timeout: 4000,
   })
+}
+
+async function inspectDeskSurface(
+  page: Page,
+  tool: string,
+  point: [number, number, number],
+  rear = false,
+) {
+  await expect(page.getByTestId('evidence-viewport')).toHaveAttribute(
+    'data-model-status',
+    'ready',
+  )
+  await page
+    .getByRole('toolbar', { name: '调查工具' })
+    .getByRole('button', { name: new RegExp(tool) })
+    .click()
+  await page.getByRole('button', { name: '复位', exact: true }).click()
+  const turns = rear ? 10 : 0
+  for (let turn = 0; turn < turns; turn++) {
+    await page.getByRole('button', { name: '左转', exact: true }).click()
+  }
+  const bounds = await page
+    .getByTestId('evidence-viewport')
+    .locator('canvas')
+    .boundingBox()
+  if (!bounds) throw new Error('物证画布不可见')
+  const camera = new PerspectiveCamera(
+    38,
+    bounds.width / bounds.height,
+    0.1,
+    1000,
+  )
+  const angle = turns * 0.32
+  camera.position.set(
+    1.6 * Math.cos(angle) - 1.9 * Math.sin(angle),
+    1.12,
+    1.6 * Math.sin(angle) + 1.9 * Math.cos(angle),
+  )
+  camera.lookAt(0, 0.38, 0)
+  camera.updateMatrixWorld()
+  const screen = new Vector3(...point).project(camera)
+  const cursor = {
+    x: bounds.x + ((screen.x + 1) * bounds.width) / 2,
+    y: bounds.y + ((1 - screen.y) * bounds.height) / 2,
+  }
+  await page.mouse.move(cursor.x, cursor.y)
+  return cursor
+}
+
+async function measureDesk(page: Page) {
+  await page
+    .getByRole('toolbar', { name: '调查工具' })
+    .getByRole('button', { name: /测量/ })
+    .click()
+  await page.getByRole('button', { name: '复位', exact: true }).click()
+  await page.getByRole('button', { name: '测量桌面宽度', exact: true }).click()
+  await page.getByRole('button', { name: '测量桌面深度', exact: true }).click()
 }
 
 test('物证台支持五种工具、视角控制和帮助说明', async ({ page }) => {
@@ -29,7 +84,9 @@ test('物证台支持五种工具、视角控制和帮助说明', async ({ page 
     await expect(button).toHaveAttribute('aria-pressed', 'true')
   }
 
-  await expect(page.getByText('1.42 M')).toBeVisible()
+  await measureDesk(page)
+  await expect(page.getByText('1.42 M', { exact: true })).toBeVisible()
+  await expect(page.getByText('0.76 M', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '复位' }).click()
   await page.getByRole('button', { name: /操作说明/ }).click()
   await expect(page.getByText('数字键 1–5 可切换调查工具')).toBeVisible()
@@ -160,32 +217,75 @@ test('三件物证可依次切换并复位视角', async ({ page }) => {
 })
 
 test('桌子可通过四种工具确认移动与遮挡痕迹', async ({ page }) => {
+  test.setTimeout(60_000)
   await page.goto('/#/cases/vanished-tenant/investigation')
   await expect(page.getByTestId('evidence-viewport')).toBeVisible()
 
-  const observations = [
-    { tool: '白光', clue: '桌沿碰撞缺口方向异常' },
-    { tool: '侧光', clue: '桌腿新鲜磨痕' },
-    { tool: '线框', clue: '桌板下方存在遮挡支架' },
-    { tool: '测量', clue: '桌面尺寸恰好覆盖检修口' },
-  ]
-
-  for (const observation of observations) {
-    await page
-      .getByRole('toolbar', { name: '调查工具' })
-      .getByRole('button', { name: new RegExp(observation.tool) })
-      .click()
-    const signal = page.getByRole('button', {
-      name: '检测到异常 · 保持观察',
-    })
-    await expect(signal).toBeEnabled()
-    await signal.hover()
-    await expect(
-      page.getByRole('status').getByText(observation.clue),
-    ).toBeVisible({ timeout: 4000 })
-  }
+  await inspectDeskSurface(page, '白光', [0.44, 0.745, -0.365], true)
+  await expect(
+    page.getByRole('status').getByText('桌沿碰撞缺口方向异常'),
+  ).toBeVisible()
+  await discoverDeskLegScrape(page)
+  await inspectDeskSurface(page, '线框', [0, 0.555, -0.13])
+  await expect(
+    page.getByRole('status').getByText('桌板下方存在遮挡支架'),
+  ).toBeVisible()
+  await measureDesk(page)
+  await expect(
+    page.getByRole('status').getByText('桌面尺寸恰好覆盖检修口'),
+  ).toBeVisible()
 
   await expect(page.getByText('4 / 4')).toBeVisible()
+})
+
+test('桌子必须观察实际区域，表面两点测距不会冒充完整覆盖测量', async ({
+  page,
+}) => {
+  test.setTimeout(45_000)
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await inspectDeskSurface(page, '侧光', [0, 0.76, 0])
+  await expect(
+    page.getByRole('button', { name: '将指针停留在可疑表面' }),
+  ).toBeDisabled()
+  // Wait beyond the clue's dwell requirement while pointing at the wrong surface.
+  await page.waitForTimeout(1400)
+  await expect(page.getByText('0 / 4', { exact: true })).toBeVisible()
+
+  const first = await inspectDeskSurface(page, '测量', [-0.6, 0.76, 0.18])
+  await page.mouse.click(first.x, first.y)
+  const second = await inspectDeskSurface(page, '测量', [0.6, 0.76, 0.18])
+  await page.mouse.click(second.x, second.y)
+  const measurement = page.getByLabel('两点距离')
+  await expect(measurement).toBeVisible()
+  const distance = Number.parseFloat(await measurement.innerText())
+  expect(distance).toBeGreaterThan(1.18)
+  expect(distance).toBeLessThan(1.22)
+  await expect(page.getByText('0 / 4', { exact: true })).toBeVisible()
+
+  await measureDesk(page)
+  await expect(
+    page.getByRole('status').getByText('桌面尺寸恰好覆盖检修口'),
+  ).toBeVisible()
+})
+
+test('桌子模型加载失败后可以从静态预览重试', async ({ page }) => {
+  let shouldFail = true
+  await page.route('**/evidence/desk.glb', async (route) => {
+    if (shouldFail) await route.fulfill({ status: 404, body: 'missing model' })
+    else await route.continue()
+  })
+  await page.goto('/#/cases/vanished-tenant/investigation')
+  await expect(page.getByText('物证模型暂时无法打开')).toBeVisible()
+  await expect(
+    page.getByRole('img', { name: '桌子物证静态预览' }),
+  ).toBeVisible()
+  shouldFail = false
+  await page.getByRole('button', { name: '重新加载模型' }).click()
+  await expect(page.getByTestId('evidence-viewport')).toHaveAttribute(
+    'data-model-status',
+    'ready',
+  )
+  await discoverDeskLegScrape(page)
 })
 
 test('已发现线索可在档案中查阅来源与说明', async ({ page }) => {
@@ -221,8 +321,11 @@ test('三组物证可分别形成规则驱动的中间结论', async ({ page }) 
     })
   }
 
-  await discover('侧光', '桌腿新鲜磨痕')
-  await discover('测量', '桌面尺寸恰好覆盖检修口')
+  await discoverDeskLegScrape(page)
+  await measureDesk(page)
+  await expect(
+    page.getByRole('status').getByText('桌面尺寸恰好覆盖检修口'),
+  ).toBeVisible()
 
   await page.getByRole('button', { name: /损坏的旧相机/ }).click()
   await discover('紫外', '被擦除的延时标记')

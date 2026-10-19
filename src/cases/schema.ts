@@ -78,6 +78,14 @@ export const HotspotDefinitionSchema = z
     minCameraDistance: z.number().nonnegative().optional(),
     maxCameraDistance: z.number().positive().optional(),
     dwellMs: z.number().int().min(100).max(30_000),
+    requiresSurfaceHit: z.boolean().optional(),
+    measurement: z
+      .object({
+        width: z.number().positive(),
+        depth: z.number().positive(),
+        tolerance: z.number().positive(),
+      })
+      .optional(),
     prerequisites: z.array(idSchema),
     bookmarkOnDiscover: CameraBookmarkSchema.optional(),
   })
@@ -95,6 +103,7 @@ export const HotspotDefinitionSchema = z
 export const EvidenceDefinitionSchema = z.object({
   id: idSchema,
   modelUrl: z.string().startsWith('/cases/'),
+  representation: z.enum(['proxy', 'glb']).optional(),
   posterUrl: z.string().startsWith('/cases/'),
   titleKey: localizationKeySchema,
   descriptionKey: localizationKeySchema,

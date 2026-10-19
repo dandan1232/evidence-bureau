@@ -6,6 +6,8 @@ export type HotspotObservation = {
   viewAngleDeg: number
   dwellMs: number
   discoveredClueIds: ReadonlySet<string>
+  targetedHotspotId?: string
+  measuredDimensions?: { width?: number; depth?: number }
 }
 
 export type HotspotEvaluation =
@@ -20,6 +22,8 @@ export type HotspotEvaluation =
         | 'too-far'
         | 'wrong-angle'
         | 'insufficient-dwell'
+        | 'wrong-region'
+        | 'measurement-required'
       remainingDwellMs?: number
     }
 
@@ -62,6 +66,28 @@ export function evaluateHotspot(
     observation.viewAngleDeg > hotspot.maxViewAngleDeg
   ) {
     return { status: 'pending', reason: 'wrong-angle' }
+  }
+
+  if (
+    hotspot.requiresSurfaceHit &&
+    observation.targetedHotspotId !== hotspot.id
+  ) {
+    return { status: 'pending', reason: 'wrong-region' }
+  }
+
+  if (hotspot.measurement) {
+    const { width, depth, tolerance } = hotspot.measurement
+    const measured = observation.measuredDimensions
+    if (
+      measured?.width === undefined ||
+      measured.depth === undefined ||
+      !Number.isFinite(measured.width) ||
+      !Number.isFinite(measured.depth) ||
+      Math.abs(measured.width - width) > tolerance ||
+      Math.abs(measured.depth - depth) > tolerance
+    ) {
+      return { status: 'pending', reason: 'measurement-required' }
+    }
   }
 
   if (observation.dwellMs < hotspot.dwellMs) {

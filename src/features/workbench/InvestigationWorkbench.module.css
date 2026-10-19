@@ -281,6 +281,16 @@
   cursor: crosshair;
 }
 
+.surfaceSignal {
+  top: 1rem;
+  right: 1rem;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  min-height: 2.5rem;
+  pointer-events: none;
+}
+
 .hotspotAligned > span::after {
   animation: signal-pulse 1.25s var(--ease-out) infinite;
 }

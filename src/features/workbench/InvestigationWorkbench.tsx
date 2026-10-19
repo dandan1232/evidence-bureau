@@ -98,6 +98,7 @@ export function InvestigationWorkbench({
   const activeTool =
     investigationTools.find(({ id }) => id === selectedTool) ??
     investigationTools[0]
+  const usesStaticModel = currentEvidence?.representation === 'glb'
   const discoveredSet = useMemo(
     () => new Set(discoveredClueIds),
     [discoveredClueIds],
@@ -142,6 +143,15 @@ export function InvestigationWorkbench({
     hotspotEvaluation?.status === 'discovered' ||
     (hotspotEvaluation?.status === 'pending' &&
       hotspotEvaluation.reason === 'insufficient-dwell')
+  const autoObserving =
+    usesStaticModel &&
+    Boolean(
+      activeHotspot &&
+      (cameraObservation.targetedHotspotId === activeHotspot.id ||
+        (activeHotspot.measurement &&
+          cameraObservation.measuredDimensions?.width !== undefined &&
+          cameraObservation.measuredDimensions.depth !== undefined)),
+    )
   const hotspotFeedbackKey = (() => {
     if (hotspotAligned) return 'ui.hotspotSignal'
     if (hotspotEvaluation?.status !== 'pending') return 'ui.hotspotBlocked'
@@ -149,6 +159,10 @@ export function InvestigationWorkbench({
     if (hotspotEvaluation.reason === 'too-far') return 'ui.hotspotTooFar'
     if (hotspotEvaluation.reason === 'wrong-angle')
       return 'ui.hotspotWrongAngle'
+    if (hotspotEvaluation.reason === 'wrong-region')
+      return 'ui.hotspotInspectSurface'
+    if (hotspotEvaluation.reason === 'measurement-required')
+      return 'ui.hotspotMeasureDimensions'
     if (hotspotEvaluation.reason === 'missing-prerequisite') {
       return 'ui.hotspotMissingPrerequisite'
     }
@@ -183,7 +197,10 @@ export function InvestigationWorkbench({
   }, [changeTool])
 
   useEffect(() => {
-    if (!isObserving || !activeHotspot) return
+    if ((!isObserving && !autoObserving) || !activeHotspot) {
+      observationStartedAt.current = null
+      return
+    }
 
     const startedAt = observationStartedAt.current ?? performance.now()
     observationStartedAt.current = startedAt
@@ -213,6 +230,7 @@ export function InvestigationWorkbench({
     return () => window.clearInterval(interval)
   }, [
     activeHotspot,
+    autoObserving,
     cameraObservation,
     discoveredSet,
     discoverClue,
@@ -237,7 +255,12 @@ export function InvestigationWorkbench({
     (nextObservation: CameraObservation) => {
       setCameraObservation((previous) =>
         previous.cameraDistance === nextObservation.cameraDistance &&
-        previous.viewAngleDeg === nextObservation.viewAngleDeg
+        previous.viewAngleDeg === nextObservation.viewAngleDeg &&
+        previous.targetedHotspotId === nextObservation.targetedHotspotId &&
+        previous.measuredDimensions?.width ===
+          nextObservation.measuredDimensions?.width &&
+        previous.measuredDimensions?.depth ===
+          nextObservation.measuredDimensions?.depth
           ? previous
           : nextObservation,
       )
@@ -377,13 +400,15 @@ export function InvestigationWorkbench({
               <h1 id="evidence-title">{text(currentEvidence.titleKey)}</h1>
             </div>
             <span className={styles.proxyBadge}>
-              {text('ui.proxyGeometry')}
+              {text(usesStaticModel ? 'ui.staticGeometry' : 'ui.proxyGeometry')}
             </span>
           </div>
 
           <div className={styles.canvasFrame}>
             <EvidenceViewport
-              evidenceId={currentEvidence.id}
+              key={currentEvidence.id}
+              evidence={currentEvidence}
+              hotspot={activeHotspot}
               selectedTool={selectedTool}
               command={command}
               onObservationChange={updateCameraObservation}
@@ -395,7 +420,7 @@ export function InvestigationWorkbench({
             />
             {activeHotspot ? (
               <button
-                className={`${styles.hotspotSignal} ${hotspotAligned ? styles.hotspotAligned : ''}`}
+                className={`${styles.hotspotSignal} ${usesStaticModel ? styles.surfaceSignal : ''} ${hotspotAligned ? styles.hotspotAligned : ''}`}
                 disabled={!hotspotAligned}
                 type="button"
                 aria-label={text(hotspotFeedbackKey)}
@@ -416,11 +441,16 @@ export function InvestigationWorkbench({
             <div className={styles.scanReadout} aria-hidden="true">
               <span>SCAN / LIVE</span>
               <span>ROTATION: FREE</span>
-              <span>LOD: PROXY</span>
+              <span>{usesStaticModel ? 'UNITS: METERS' : 'LOD: PROXY'}</span>
             </div>
           </div>
 
           <div className={styles.viewControls} aria-label="物证视角控制">
+            {usesStaticModel ? (
+              <button type="button" onClick={() => issueCommand('inspect')}>
+                {text('ui.inspectCenter')}
+              </button>
+            ) : null}
             <button type="button" onClick={() => issueCommand('rotate-left')}>
               <RotateCcw aria-hidden="true" size={17} />
               {text('ui.rotateLeft')}
@@ -464,6 +494,7 @@ export function InvestigationWorkbench({
                     className={active ? styles.activeEvidence : undefined}
                     type="button"
                     onClick={() => {
+                      endObservation()
                       setCurrentEvidence(evidence.id)
                       issueCommand('reset')
                     }}
@@ -473,7 +504,13 @@ export function InvestigationWorkbench({
                     </span>
                     <span>
                       <strong>{text(evidence.titleKey)}</strong>
-                      <small>{text('ui.readyForScan')}</small>
+                      <small>
+                        {text(
+                          evidence.representation === 'glb'
+                            ? 'ui.staticReadyForScan'
+                            : 'ui.readyForScan',
+                        )}
+                      </small>
                     </span>
                   </button>
                 </li>

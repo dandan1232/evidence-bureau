@@ -17,18 +17,19 @@
     {
       "id": "moved-desk",
       "modelUrl": "/cases/vanished-tenant/evidence/desk.glb",
-      "posterUrl": "/cases/vanished-tenant/images/desk-poster.webp",
+      "representation": "glb",
+      "posterUrl": "/cases/vanished-tenant/images/desk-poster.png",
       "titleKey": "evidence.desk.title",
       "descriptionKey": "evidence.desk.description",
       "initialCamera": {
-        "position": [2.8, 1.8, 3.2],
-        "target": [0, 0.7, 0],
-        "fov": 42
+        "position": [1.6, 1.12, 1.9],
+        "target": [0, 0.38, 0],
+        "fov": 38
       },
       "cameraLimits": {
-        "minDistance": 1.2,
-        "maxDistance": 7,
-        "minPolarAngleDeg": 15,
+        "minDistance": 0.45,
+        "maxDistance": 4.5,
+        "minPolarAngleDeg": 10,
         "maxPolarAngleDeg": 165
       },
       "hotspots": [
@@ -37,14 +38,15 @@
           "clueId": "desk-leg-fresh-scrape",
           "shape": {
             "type": "sphere",
-            "center": [-1.27, 0.06, 0.57],
-            "radius": 0.18
+            "center": [-0.585, 0.085, 0.29],
+            "radius": 0.06
           },
           "requiredTool": "side-light",
           "surfaceNormal": [0, 0, 1],
-          "maxViewAngleDeg": 75,
-          "minCameraDistance": 2.4,
-          "maxCameraDistance": 9,
+          "maxViewAngleDeg": 80,
+          "minCameraDistance": 0.25,
+          "maxCameraDistance": 3.5,
+          "requiresSurfaceHit": true,
           "dwellMs": 1200,
           "prerequisites": []
         },
@@ -53,14 +55,15 @@
           "clueId": "desk-wall-impact-notch",
           "shape": {
             "type": "sphere",
-            "center": [0.08, 1.34, -0.72],
-            "radius": 0.3
+            "center": [0.44, 0.745, -0.365],
+            "radius": 0.075
           },
           "requiredTool": "white-light",
           "surfaceNormal": [0, 0, -1],
-          "maxViewAngleDeg": 180,
-          "minCameraDistance": 2.4,
-          "maxCameraDistance": 9,
+          "maxViewAngleDeg": 85,
+          "minCameraDistance": 0.25,
+          "maxCameraDistance": 3.5,
+          "requiresSurfaceHit": true,
           "dwellMs": 700,
           "prerequisites": []
         },
@@ -69,14 +72,15 @@
           "clueId": "desk-underside-bracket",
           "shape": {
             "type": "sphere",
-            "center": [0, 0.88, -0.68],
-            "radius": 0.45
+            "center": [0, 0.555, -0.13],
+            "radius": 0.16
           },
           "requiredTool": "wireframe",
-          "surfaceNormal": [0, 0, -1],
+          "surfaceNormal": [0, 0, 1],
           "maxViewAngleDeg": 180,
-          "minCameraDistance": 2.4,
-          "maxCameraDistance": 9,
+          "minCameraDistance": 0.25,
+          "maxCameraDistance": 3.5,
+          "requiresSurfaceHit": true,
           "dwellMs": 900,
           "prerequisites": []
         },
@@ -85,14 +89,15 @@
           "clueId": "desk-access-clearance",
           "shape": {
             "type": "sphere",
-            "center": [0, 1.28, 0],
-            "radius": 0.65
+            "center": [0, 0.76, 0],
+            "radius": 0.75
           },
           "requiredTool": "measurement",
           "surfaceNormal": [0, 1, 0],
           "maxViewAngleDeg": 180,
-          "minCameraDistance": 2.4,
-          "maxCameraDistance": 9,
+          "minCameraDistance": 0.25,
+          "maxCameraDistance": 3.5,
+          "measurement": { "width": 1.42, "depth": 0.76, "tolerance": 0.025 },
           "dwellMs": 900,
           "prerequisites": []
         }

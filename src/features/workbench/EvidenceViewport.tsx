@@ -1,18 +1,45 @@
-import { ContactShadows, Grid, OrbitControls } from '@react-three/drei'
+import {
+  ContactShadows,
+  Grid,
+  Html,
+  Line,
+  OrbitControls,
+  useGLTF,
+} from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Vector3 } from 'three'
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { Box3, Raycaster, Vector2, Vector3 } from 'three'
 
-import type { ToolId } from '../../cases/schema'
+import type {
+  EvidenceDefinition,
+  HotspotDefinition,
+  ToolId,
+} from '../../cases/schema'
+import { ModelBoundary, StaticEvidenceModel } from './StaticEvidenceModel'
+import { getMeasuredAxis, isPointInHotspot } from './surface-inspection'
 import styles from './EvidenceViewport.module.css'
 
 export type ViewCommand = {
   sequence: number
-  type: 'rotate-left' | 'rotate-right' | 'zoom-in' | 'zoom-out' | 'reset'
+  type:
+    | 'rotate-left'
+    | 'rotate-right'
+    | 'zoom-in'
+    | 'zoom-out'
+    | 'reset'
+    | 'inspect'
 }
 
 type EvidenceViewportProps = {
-  evidenceId: string
+  evidence: EvidenceDefinition
+  hotspot?: HotspotDefinition
   selectedTool: ToolId
   command: ViewCommand
   onObservationChange: (observation: CameraObservation) => void
@@ -25,16 +52,62 @@ type EvidenceViewportProps = {
 export type CameraObservation = {
   cameraDistance: number
   viewAngleDeg: number
+  targetedHotspotId?: string
+  measuredDimensions?: { width?: number; depth?: number }
 }
 
 export function EvidenceViewport({
-  evidenceId,
+  evidence,
+  hotspot,
   selectedTool,
   command,
   onObservationChange,
   authoringHotspot,
 }: EvidenceViewportProps) {
   const [webGLAvailable] = useState(supportsWebGL)
+  const evidenceId = evidence.id
+  const isStatic = evidence.representation === 'glb'
+  const [assetStatus, setAssetStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  )
+  const [loadAttempt, setLoadAttempt] = useState(0)
+  const [tabletopBounds, setTabletopBounds] = useState<Box3 | null>(null)
+  const [targetedHotspotId, setTargetedHotspotId] = useState<string>()
+  const [measurementPoints, setMeasurementPoints] = useState<Vector3[]>([])
+  const [measuredDimensions, setMeasuredDimensions] = useState<{
+    width?: number
+    depth?: number
+  }>({})
+  const handleModelLoaded = useCallback((bounds: Box3) => {
+    setTabletopBounds(bounds)
+    setAssetStatus('ready')
+  }, [])
+  const handleModelError = useCallback(() => setAssetStatus('error'), [])
+  const measureBetween = (first: Vector3, second: Vector3) => {
+    setMeasurementPoints([first, second])
+    const axis = getMeasuredAxis(first, second)
+    if (axis) {
+      const distance = first.distanceTo(second)
+      setMeasuredDimensions((previous) => ({ ...previous, [axis]: distance }))
+    }
+  }
+  const selectMeasurementPoint = (point: Vector3) => {
+    if (measurementPoints.length === 1 && measurementPoints[0]) {
+      measureBetween(measurementPoints[0], point)
+    } else {
+      setMeasurementPoints([point])
+    }
+  }
+  const measureTabletop = (axis: 'width' | 'depth') => {
+    if (!tabletopBounds || tabletopBounds.isEmpty()) return
+    const { min, max } = tabletopBounds
+    const first = new Vector3(
+      axis === 'width' ? min.x : max.x,
+      max.y,
+      axis === 'width' ? max.z : min.z,
+    )
+    measureBetween(first, new Vector3(max.x, max.y, max.z))
+  }
 
   if (!webGLAvailable) {
     const evidenceName = evidenceNames[evidenceId] ?? '当前物证'
@@ -55,24 +128,106 @@ export function EvidenceViewport({
   }
 
   return (
-    <div className={styles.viewport} data-testid="evidence-viewport">
+    <div
+      className={styles.viewport}
+      data-testid="evidence-viewport"
+      data-model-status={isStatic ? assetStatus : 'proxy'}
+    >
       <Canvas
-        camera={{ position: [4.8, 3.2, 5.2], fov: 38 }}
+        camera={
+          isStatic
+            ? {
+                position: evidence.initialCamera.position,
+                fov: evidence.initialCamera.fov,
+              }
+            : { position: [4.8, 3.2, 5.2], fov: 38 }
+        }
         dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
       >
         <color attach="background" args={['#0b0d0e']} />
         <fog attach="fog" args={['#0b0d0e', 8, 15]} />
-        <SceneLighting tool={selectedTool} />
-        <EvidenceModel
-          evidenceId={evidenceId}
-          tool={selectedTool}
-          authoringHotspot={authoringHotspot}
-        />
+        <SceneLighting tool={selectedTool} compact={isStatic} />
+        {isStatic ? (
+          <ModelBoundary
+            key={loadAttempt}
+            fallback={null}
+            onError={handleModelError}
+          >
+            <Suspense fallback={null}>
+              <StaticEvidenceModel
+                url={evidence.modelUrl}
+                tool={selectedTool}
+                hotspot={hotspot}
+                onLoaded={handleModelLoaded}
+                onTargetChange={setTargetedHotspotId}
+                onMeasure={selectMeasurementPoint}
+              />
+            </Suspense>
+          </ModelBoundary>
+        ) : (
+          <EvidenceModel
+            evidenceId={evidenceId}
+            tool={selectedTool}
+            authoringHotspot={authoringHotspot}
+          />
+        )}
+        {isStatic && authoringHotspot ? (
+          <mesh position={authoringHotspot.center} renderOrder={10}>
+            <sphereGeometry args={[authoringHotspot.radius, 20, 12]} />
+            <meshBasicMaterial
+              color="#f0a83a"
+              depthTest={false}
+              opacity={0.6}
+              transparent
+              wireframe
+            />
+          </mesh>
+        ) : null}
+        {isStatic && selectedTool === 'measurement' ? (
+          <>
+            {measurementPoints.map((point, index) => (
+              <mesh key={index} position={point} renderOrder={20}>
+                <sphereGeometry args={[0.008, 12, 8]} />
+                <meshBasicMaterial color="#d6b885" depthTest={false} />
+              </mesh>
+            ))}
+            {measurementPoints.length === 2 &&
+            measurementPoints[0] &&
+            measurementPoints[1] ? (
+              <>
+                <Line
+                  points={measurementPoints}
+                  color="#d6b885"
+                  lineWidth={1.5}
+                  depthTest={false}
+                />
+                <Html
+                  position={measurementPoints[0]
+                    .clone()
+                    .add(measurementPoints[1])
+                    .multiplyScalar(0.5)}
+                  center
+                  style={{ pointerEvents: 'none' }}
+                >
+                  <output
+                    aria-label="两点距离"
+                    className={styles.distanceLabel}
+                  >
+                    {measurementPoints[0]
+                      .distanceTo(measurementPoints[1])
+                      .toFixed(3)}{' '}
+                    m
+                  </output>
+                </Html>
+              </>
+            ) : null}
+          </>
+        ) : null}
         <ContactShadows
           position={[0, -0.03, 0]}
           opacity={0.38}
-          scale={8}
+          scale={isStatic ? 3.5 : 8}
           blur={2.6}
           far={4.5}
         />
@@ -80,21 +235,81 @@ export function EvidenceViewport({
           position={[0, -0.04, 0]}
           args={[12, 12]}
           cellColor="#32383b"
-          cellSize={0.25}
+          cellSize={isStatic ? 0.1 : 0.25}
           cellThickness={0.45}
           fadeDistance={9}
           fadeStrength={1.6}
           sectionColor="#53616a"
-          sectionSize={1}
+          sectionSize={isStatic ? 0.5 : 1}
           sectionThickness={0.8}
         />
         <CameraController
           command={command}
+          evidence={evidence}
+          hotspot={hotspot}
+          selectedTool={selectedTool}
+          targetedHotspotId={targetedHotspotId}
+          onTargetChange={setTargetedHotspotId}
+          measuredDimensions={measuredDimensions}
           onObservationChange={onObservationChange}
         />
       </Canvas>
 
-      {selectedTool === 'measurement' ? (
+      {isStatic && assetStatus !== 'ready' ? (
+        <div className={styles.assetStatus} role="status">
+          {assetStatus === 'error' ? (
+            <>
+              <img src={evidence.posterUrl} alt="桌子物证静态预览" />
+              <strong>物证模型暂时无法打开</strong>
+              <p>可先查阅档案和案件材料，或重新加载模型。</p>
+              <button
+                type="button"
+                onClick={() => {
+                  useGLTF.clear(evidence.modelUrl)
+                  setAssetStatus('loading')
+                  setLoadAttempt((attempt) => attempt + 1)
+                }}
+              >
+                重新加载模型
+              </button>
+            </>
+          ) : (
+            <p>正在读取物证模型…</p>
+          )}
+        </div>
+      ) : null}
+
+      {selectedTool === 'measurement' && isStatic && assetStatus === 'ready' ? (
+        <div className={styles.measurementPanel} aria-label="物证尺寸测量">
+          <p>点击表面两点测距，或使用边缘卡尺。</p>
+          <div>
+            <button type="button" onClick={() => measureTabletop('width')}>
+              测量桌面宽度
+            </button>
+            <button type="button" onClick={() => measureTabletop('depth')}>
+              测量桌面深度
+            </button>
+          </div>
+          <dl aria-live="polite">
+            <div>
+              <dt>宽度</dt>
+              <dd>
+                {measuredDimensions.width === undefined
+                  ? '待测量'
+                  : `${measuredDimensions.width.toFixed(2)} M`}
+              </dd>
+            </div>
+            <div>
+              <dt>深度</dt>
+              <dd>
+                {measuredDimensions.depth === undefined
+                  ? '待测量'
+                  : `${measuredDimensions.depth.toFixed(2)} M`}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      ) : selectedTool === 'measurement' && !isStatic ? (
         <div className={styles.measurementOverlay} aria-live="polite">
           <span className={styles.widthMeasure}>
             {evidenceMeasurements[evidenceId]?.width ?? '—'}
@@ -127,7 +342,7 @@ const evidenceMeasurements: Record<string, { width: string; height: string }> =
     'brass-key': { width: '84 MM', height: '29 MM' },
   }
 
-function SceneLighting({ tool }: { tool: ToolId }) {
+function SceneLighting({ tool, compact }: { tool: ToolId; compact: boolean }) {
   if (tool === 'side-light') {
     return (
       <>
@@ -136,9 +351,9 @@ function SceneLighting({ tool }: { tool: ToolId }) {
           castShadow
           angle={0.55}
           color="#e9edf0"
-          intensity={85}
+          intensity={compact ? 45 : 85}
           penumbra={0.6}
-          position={[-5, 1.2, 2]}
+          position={compact ? [-1.2, 0.25, 1.2] : [-5, 1.2, 2]}
         />
       </>
     )
@@ -400,24 +615,49 @@ function BrassKeyEvidence({ tool }: { tool: ToolId }) {
 
 function CameraController({
   command,
+  evidence,
+  hotspot,
+  selectedTool,
+  targetedHotspotId,
+  onTargetChange,
+  measuredDimensions,
   onObservationChange,
 }: {
   command: ViewCommand
+  evidence: EvidenceDefinition
+  hotspot?: HotspotDefinition
+  selectedTool: ToolId
+  targetedHotspotId?: string
+  onTargetChange: (hotspotId?: string) => void
+  measuredDimensions: { width?: number; depth?: number }
   onObservationChange: (observation: CameraObservation) => void
 }) {
-  const { camera } = useThree()
-  const [target] = useState(() => ({ x: 0, y: 0.7, z: 0 }))
-  const hotspotPosition = useMemo(
+  const { camera, scene } = useThree()
+  const isStatic = evidence.representation === 'glb'
+  const target = useMemo(
     () =>
-      new Vector3(-1.27, 0.11, 0.57).applyAxisAngle(
-        new Vector3(0, 1, 0),
-        -0.24,
+      new Vector3(
+        ...(isStatic ? evidence.initialCamera.target : ([0, 0.7, 0] as const)),
       ),
-    [],
+    [evidence, isStatic],
+  )
+  const limits = isStatic
+    ? evidence.cameraLimits
+    : {
+        minDistance: 2.4,
+        maxDistance: 9,
+        minPolarAngleDeg: 14.4,
+        maxPolarAngleDeg: 165.6,
+      }
+  const raycaster = useMemo(() => new Raycaster(), [])
+  const handledCommand = useRef(0)
+  const hotspotPosition = useMemo(
+    () => new Vector3(...(hotspot?.shape.center ?? [0, 0.7, 0])),
+    [hotspot],
   )
   const hotspotNormal = useMemo(
-    () => new Vector3(0, 0, 1).applyAxisAngle(new Vector3(0, 1, 0), -0.24),
-    [],
+    () => new Vector3(...(hotspot?.surfaceNormal ?? [0, 0, 1])),
+    [hotspot],
   )
 
   const reportObservation = useCallback(() => {
@@ -428,50 +668,95 @@ function CameraController({
     onObservationChange({
       cameraDistance: Math.round(cameraDistance * 10) / 10,
       viewAngleDeg: Math.round(viewAngleDeg),
+      targetedHotspotId,
+      measuredDimensions,
     })
-  }, [camera, hotspotNormal, hotspotPosition, onObservationChange])
+  }, [
+    camera,
+    hotspotNormal,
+    hotspotPosition,
+    onObservationChange,
+    targetedHotspotId,
+    measuredDimensions,
+  ])
 
   useEffect(() => {
-    if (command.sequence === 0) {
-      reportObservation()
+    if (command.sequence === handledCommand.current) return
+    handledCommand.current = command.sequence
+    if (command.type === 'inspect') {
+      const model = scene.getObjectByName('static-evidence-model')
+      if (model && hotspot) {
+        raycaster.setFromCamera(new Vector2(0, 0), camera)
+        const intersections = raycaster.intersectObject(model, true)
+        const hit =
+          selectedTool === 'wireframe'
+            ? intersections.find(({ point }) =>
+                isPointInHotspot(point, hotspot),
+              )
+            : intersections[0]
+        onTargetChange(
+          hit && isPointInHotspot(hit.point, hotspot) ? hotspot.id : undefined,
+        )
+      }
       return
     }
-
+    onTargetChange(undefined)
     if (command.type === 'reset') {
-      camera.position.set(4.8, 3.2, 5.2)
+      camera.position.fromArray(
+        isStatic ? evidence.initialCamera.position : [4.8, 3.2, 5.2],
+      )
     } else if (command.type === 'zoom-in') {
-      camera.position.multiplyScalar(0.82)
+      camera.position.sub(target).multiplyScalar(0.82).add(target)
     } else if (command.type === 'zoom-out') {
-      camera.position.multiplyScalar(1.2)
+      camera.position.sub(target).multiplyScalar(1.2).add(target)
     } else {
       const angle = command.type === 'rotate-left' ? 0.32 : -0.32
-      const x = camera.position.x
-      const z = camera.position.z
+      const x = camera.position.x - target.x
+      const z = camera.position.z - target.z
       camera.position.set(
-        x * Math.cos(angle) - z * Math.sin(angle),
+        target.x + x * Math.cos(angle) - z * Math.sin(angle),
         camera.position.y,
-        x * Math.sin(angle) + z * Math.cos(angle),
+        target.z + x * Math.sin(angle) + z * Math.cos(angle),
       )
     }
 
-    const distance = camera.position.length()
-    if (distance < 2.4) camera.position.setLength(2.4)
-    if (distance > 9) camera.position.setLength(9)
-    camera.lookAt(target.x, target.y, target.z)
+    const offset = camera.position.clone().sub(target)
+    offset.clampLength(limits.minDistance, limits.maxDistance)
+    camera.position.copy(target).add(offset)
+    camera.lookAt(target)
     camera.updateProjectionMatrix()
+  }, [
+    camera,
+    command,
+    evidence,
+    hotspot,
+    isStatic,
+    limits.minDistance,
+    limits.maxDistance,
+    onTargetChange,
+    raycaster,
+    scene,
+    selectedTool,
+    target,
+  ])
+
+  useEffect(() => {
     reportObservation()
-  }, [camera, command, reportObservation, target])
+  }, [reportObservation])
 
   return (
     <OrbitControls
       enableDamping
+      keyEvents={isStatic}
       dampingFactor={0.08}
-      maxDistance={9}
-      maxPolarAngle={Math.PI * 0.92}
-      minDistance={2.4}
-      minPolarAngle={Math.PI * 0.08}
+      maxDistance={limits.maxDistance}
+      maxPolarAngle={(limits.maxPolarAngleDeg * Math.PI) / 180}
+      minDistance={limits.minDistance}
+      minPolarAngle={(limits.minPolarAngleDeg * Math.PI) / 180}
+      onStart={() => onTargetChange(undefined)}
+      onChange={reportObservation}
       onEnd={reportObservation}
-      target={[target.x, target.y, target.z]}
+      target={target}
     />
   )
 }

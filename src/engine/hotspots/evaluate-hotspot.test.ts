@@ -69,4 +69,43 @@ describe('evaluateHotspot', () => {
       }),
     ).toMatchObject({ reason: 'already-discovered' })
   })
+
+  it('静态物证必须实际指向对应区域，不能只等待', () => {
+    const surfaceHotspot = { ...hotspot, requiresSurfaceHit: true }
+    expect(evaluateHotspot(surfaceHotspot, validObservation)).toMatchObject({
+      reason: 'wrong-region',
+    })
+    expect(
+      evaluateHotspot(surfaceHotspot, {
+        ...validObservation,
+        targetedHotspotId: hotspot.id,
+      }),
+    ).toEqual({ status: 'discovered' })
+  })
+
+  it('只有两条实际测量均符合尺寸时才能确认覆盖关系', () => {
+    const measuredHotspot = {
+      ...hotspot,
+      measurement: { width: 1.42, depth: 0.76, tolerance: 0.025 },
+    }
+    for (const measuredDimensions of [
+      undefined,
+      { width: 1.42 },
+      { width: 0.8, depth: 0.76 },
+      { width: Number.NaN, depth: 0.76 },
+    ]) {
+      expect(
+        evaluateHotspot(measuredHotspot, {
+          ...validObservation,
+          measuredDimensions,
+        }),
+      ).toMatchObject({ reason: 'measurement-required' })
+    }
+    expect(
+      evaluateHotspot(measuredHotspot, {
+        ...validObservation,
+        measuredDimensions: { width: 1.42, depth: 0.76 },
+      }),
+    ).toEqual({ status: 'discovered' })
+  })
 })
