@@ -20,12 +20,19 @@ import { countViewedHintLevels } from '../../engine/hints/hint-progress'
 import { calculateRating } from '../../engine/rating/calculate-rating'
 import { useGameStore } from '../../state/game-store'
 import styles from './DeductionBoard.module.css'
+import { GuidedReasoning } from './GuidedReasoning'
 
 type DeductionBoardProps = {
   bundle: CaseBundle
+  guided?: boolean
+  onFindClue?: (clueId: string) => void
 }
 
-export function DeductionBoard({ bundle }: DeductionBoardProps) {
+export function DeductionBoard({
+  bundle,
+  guided = false,
+  onFindClue,
+}: DeductionBoardProps) {
   const { caseDefinition, messages } = bundle
   const navigate = useNavigate()
   const discoveredClueIds = useGameStore((state) => state.discoveredClueIds)
@@ -200,15 +207,26 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
         </div>
         <div>
           <h1 id="deduction-title">{text('ui.deductionTitle')}</h1>
-          <span>{text('ui.deductionDescription')}</span>
+          <span>
+            {guided
+              ? '先确认三项判断，再还原住客的离开方式。'
+              : text('ui.deductionDescription')}
+          </span>
         </div>
-        <strong>{boardSummary}</strong>
+        <strong>
+          {guided
+            ? `${unlockedConclusions.length} / ${conclusionCount} 项判断已确认`
+            : boardSummary}
+        </strong>
       </header>
 
-      <div className={styles.boardLayout}>
+      <div
+        className={`${styles.boardLayout} ${guided ? styles.guidedLayout : ''}`}
+      >
         <aside
           className={styles.sourceTray}
           aria-labelledby="source-tray-title"
+          hidden={guided}
         >
           <div className={styles.sectionTitle}>
             <span>01</span>
@@ -255,156 +273,165 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
           className={styles.reasoningArea}
           aria-labelledby="reasoning-title"
         >
-          <div className={styles.sectionTitle}>
-            <span>02</span>
-            <h2 id="reasoning-title">{text('ui.reasoningWorkspace')}</h2>
-          </div>
-
-          <section
-            className={styles.relationBuilder}
-            aria-labelledby="relation-builder-title"
-          >
-            <div className={styles.relationBuilderHeading}>
-              <Link2 aria-hidden="true" size={16} />
-              <h3 id="relation-builder-title">{text('ui.relationBuilder')}</h3>
-              <span>
-                {deductionRelations.length} {text('ui.relationCount')}
-              </span>
+          {guided ? (
+            <GuidedReasoning bundle={bundle} onFindClue={onFindClue} />
+          ) : null}
+          <div hidden={guided}>
+            <div className={styles.sectionTitle}>
+              <span>02</span>
+              <h2 id="reasoning-title">{text('ui.reasoningWorkspace')}</h2>
             </div>
-            <div className={styles.relationControls}>
-              <label>
-                <span>{text('ui.relationFrom')}</span>
-                <select
-                  value={relationFrom}
-                  onChange={(event) => setRelationFrom(event.target.value)}
-                >
-                  <option value="">{text('ui.selectNode')}</option>
-                  {relationNodes.map((clue) => (
-                    <option key={clue.id} value={clue.id}>
-                      {text(clue.titleKey)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>{text('ui.relationKind')}</span>
-                <select
-                  value={relationKind}
-                  onChange={(event) =>
-                    setRelationKind(
-                      event.target.value as DeductionRelation['kind'],
-                    )
-                  }
-                >
-                  {relationOptions.map(({ id, labelKey }) => (
-                    <option key={id} value={id}>
-                      {text(labelKey)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>{text('ui.relationTo')}</span>
-                <select
-                  value={relationTo}
-                  onChange={(event) => setRelationTo(event.target.value)}
-                >
-                  <option value="">{text('ui.selectNode')}</option>
-                  {relationNodes.map((clue) => (
-                    <option key={clue.id} value={clue.id}>
-                      {text(clue.titleKey)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                disabled={
-                  !relationFrom || !relationTo || relationFrom === relationTo
-                }
-                type="button"
-                onClick={addRelation}
-              >
-                <Plus aria-hidden="true" size={15} />
-                {text('ui.addRelation')}
-              </button>
-            </div>
-            {deductionRelations.length > 0 ? (
-              <ol className={styles.relationList}>
-                {deductionRelations.map((relation) => (
-                  <li key={`${relation.from}:${relation.kind}:${relation.to}`}>
-                    <span>{clueTitle(relation.from)}</span>
-                    <strong>{relationLabel(relation.kind)}</strong>
-                    <span>{clueTitle(relation.to)}</span>
-                    <button
-                      type="button"
-                      aria-label={`${text('ui.removeRelation')}：${clueTitle(relation.from)} → ${clueTitle(relation.to)}`}
-                      onClick={() => removeDeductionRelation(relation)}
-                    >
-                      <Trash2 aria-hidden="true" size={14} />
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-          </section>
 
-          <div className={styles.graphArea}>
-            {placedClues.length === 0 ? (
-              <div className={styles.graphEmpty}>
-                <GitFork aria-hidden="true" size={28} />
-                <p>{text('ui.dropEvidencePrompt')}</p>
-              </div>
-            ) : (
-              <>
-                <div className={styles.nodeColumn}>
-                  {placedClues.map((clue) => (
-                    <article className={styles.evidenceNode} key={clue.id}>
-                      <span>VERIFIED OBSERVATION</span>
-                      <strong>{text(clue.titleKey)}</strong>
-                      <p>{text(clue.descriptionKey)}</p>
-                    </article>
-                  ))}
-                </div>
-                <div className={styles.chainArrow} aria-hidden="true">
-                  <ArrowRight size={20} />
-                </div>
-                <div className={styles.conclusionColumn}>
-                  {conclusions.map((conclusion) => {
-                    const unlocked = isConclusionUnlocked(conclusion.id)
-                    return (
-                      <article
-                        className={`${styles.conclusionNode} ${unlocked ? styles.unlockedConclusion : ''}`}
-                        key={conclusion.id}
-                      >
-                        <span>{text('ui.intermediateConclusion')}</span>
-                        {unlocked ? (
-                          <>
-                            <ShieldCheck aria-hidden="true" size={22} />
-                            <h3>{text(conclusion.titleKey)}</h3>
-                            <p>{text(conclusion.descriptionKey)}</p>
-                          </>
-                        ) : (
-                          <strong>?</strong>
-                        )}
-                      </article>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-
-          <footer className={styles.verifyBar}>
-            <p>{feedbackText}</p>
-            <button
-              disabled={placedClues.length === 0}
-              type="button"
-              onClick={verifyChain}
+            <section
+              className={styles.relationBuilder}
+              aria-labelledby="relation-builder-title"
             >
-              <ShieldCheck aria-hidden="true" size={17} />
-              {text('ui.verifyChain')}
-            </button>
-          </footer>
+              <div className={styles.relationBuilderHeading}>
+                <Link2 aria-hidden="true" size={16} />
+                <h3 id="relation-builder-title">
+                  {text('ui.relationBuilder')}
+                </h3>
+                <span>
+                  {deductionRelations.length} {text('ui.relationCount')}
+                </span>
+              </div>
+              <div className={styles.relationControls}>
+                <label>
+                  <span>{text('ui.relationFrom')}</span>
+                  <select
+                    value={relationFrom}
+                    onChange={(event) => setRelationFrom(event.target.value)}
+                  >
+                    <option value="">{text('ui.selectNode')}</option>
+                    {relationNodes.map((clue) => (
+                      <option key={clue.id} value={clue.id}>
+                        {text(clue.titleKey)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>{text('ui.relationKind')}</span>
+                  <select
+                    value={relationKind}
+                    onChange={(event) =>
+                      setRelationKind(
+                        event.target.value as DeductionRelation['kind'],
+                      )
+                    }
+                  >
+                    {relationOptions.map(({ id, labelKey }) => (
+                      <option key={id} value={id}>
+                        {text(labelKey)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>{text('ui.relationTo')}</span>
+                  <select
+                    value={relationTo}
+                    onChange={(event) => setRelationTo(event.target.value)}
+                  >
+                    <option value="">{text('ui.selectNode')}</option>
+                    {relationNodes.map((clue) => (
+                      <option key={clue.id} value={clue.id}>
+                        {text(clue.titleKey)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  disabled={
+                    !relationFrom || !relationTo || relationFrom === relationTo
+                  }
+                  type="button"
+                  onClick={addRelation}
+                >
+                  <Plus aria-hidden="true" size={15} />
+                  {text('ui.addRelation')}
+                </button>
+              </div>
+              {deductionRelations.length > 0 ? (
+                <ol className={styles.relationList}>
+                  {deductionRelations.map((relation) => (
+                    <li
+                      key={`${relation.from}:${relation.kind}:${relation.to}`}
+                    >
+                      <span>{clueTitle(relation.from)}</span>
+                      <strong>{relationLabel(relation.kind)}</strong>
+                      <span>{clueTitle(relation.to)}</span>
+                      <button
+                        type="button"
+                        aria-label={`${text('ui.removeRelation')}：${clueTitle(relation.from)} → ${clueTitle(relation.to)}`}
+                        onClick={() => removeDeductionRelation(relation)}
+                      >
+                        <Trash2 aria-hidden="true" size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
+            </section>
+
+            <div className={styles.graphArea}>
+              {placedClues.length === 0 ? (
+                <div className={styles.graphEmpty}>
+                  <GitFork aria-hidden="true" size={28} />
+                  <p>{text('ui.dropEvidencePrompt')}</p>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.nodeColumn}>
+                    {placedClues.map((clue) => (
+                      <article className={styles.evidenceNode} key={clue.id}>
+                        <span>VERIFIED OBSERVATION</span>
+                        <strong>{text(clue.titleKey)}</strong>
+                        <p>{text(clue.descriptionKey)}</p>
+                      </article>
+                    ))}
+                  </div>
+                  <div className={styles.chainArrow} aria-hidden="true">
+                    <ArrowRight size={20} />
+                  </div>
+                  <div className={styles.conclusionColumn}>
+                    {conclusions.map((conclusion) => {
+                      const unlocked = isConclusionUnlocked(conclusion.id)
+                      return (
+                        <article
+                          className={`${styles.conclusionNode} ${unlocked ? styles.unlockedConclusion : ''}`}
+                          key={conclusion.id}
+                        >
+                          <span>{text('ui.intermediateConclusion')}</span>
+                          {unlocked ? (
+                            <>
+                              <ShieldCheck aria-hidden="true" size={22} />
+                              <h3>{text(conclusion.titleKey)}</h3>
+                              <p>{text(conclusion.descriptionKey)}</p>
+                            </>
+                          ) : (
+                            <strong>?</strong>
+                          )}
+                        </article>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <footer className={styles.verifyBar}>
+              <p>{feedbackText}</p>
+              <button
+                disabled={placedClues.length === 0}
+                type="button"
+                onClick={verifyChain}
+              >
+                <ShieldCheck aria-hidden="true" size={17} />
+                {text('ui.verifyChain')}
+              </button>
+            </footer>
+          </div>
 
           <section
             className={styles.finalChain}
@@ -485,10 +512,17 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
                 className={styles.submitButton}
                 disabled={!allIntermediateConclusionsUnlocked}
                 type="button"
-                onClick={() => setConfirmingSubmission(true)}
+                onClick={() => {
+                  if (guided) {
+                    caseDefinition.finalDeduction.requiredRelations.forEach(
+                      addDeductionRelation,
+                    )
+                  }
+                  setConfirmingSubmission(true)
+                }}
               >
                 <ShieldCheck aria-hidden="true" size={17} />
-                {text('ui.submitCase')}
+                {guided ? '整理证据并结案' : text('ui.submitCase')}
               </button>
             )}
           </section>

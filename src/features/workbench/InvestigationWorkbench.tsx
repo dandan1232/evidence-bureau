@@ -1,6 +1,7 @@
 import {
   Archive,
   BookOpenText,
+  CheckCircle2,
   ChevronLeft,
   CircleHelp,
   FileText,
@@ -23,6 +24,7 @@ import { Link, useLocation } from 'react-router-dom'
 
 import { translate } from '../../cases/localization'
 import type { CaseBundle } from '../../cases/loader'
+import type { HotspotDefinition } from '../../cases/schema'
 import { evaluateHotspot } from '../../engine/hotspots/evaluate-hotspot'
 import { useGameStore } from '../../state/game-store'
 import { useGamePersistence } from '../../state/use-game-persistence'
@@ -72,6 +74,9 @@ export function InvestigationWorkbench({
   const discoverClue = useGameStore((state) => state.discoverClue)
   const [command, setCommand] = useState<ViewCommand>(initialCommand)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [guided, setGuided] = useState(true)
+  const [guidedHotspotId, setGuidedHotspotId] = useState<string>()
+  const [recordedClueId, setRecordedClueId] = useState<string>()
   const [activeSection, setActiveSection] =
     useState<WorkbenchSection>('evidence')
   const [cameraObservation, setCameraObservation] = useState<CameraObservation>(
@@ -103,10 +108,18 @@ export function InvestigationWorkbench({
     () => new Set(discoveredClueIds),
     [discoveredClueIds],
   )
-  const activeHotspot = currentEvidence?.hotspots.find(
-    ({ clueId, requiredTool }) =>
-      requiredTool === selectedTool && !discoveredSet.has(clueId),
-  )
+  const guidedHotspot = guided
+    ? currentEvidence?.hotspots.find(
+        ({ id, clueId }) =>
+          id === guidedHotspotId && !discoveredSet.has(clueId),
+      )
+    : undefined
+  const activeHotspot =
+    guidedHotspot ??
+    currentEvidence?.hotspots.find(
+      ({ clueId, requiredTool }) =>
+        requiredTool === selectedTool && !discoveredSet.has(clueId),
+    )
   const authoringHotspotDefinition =
     activeHotspot ?? currentEvidence?.hotspots[0]
   const [authoringOverrides, setAuthoringOverrides] = useState<
@@ -131,6 +144,36 @@ export function InvestigationWorkbench({
     .filter((clue) => clue !== undefined)
   const latestDiscoveredClue = currentDiscoveredClues.at(-1)
   const totalEvidenceClues = currentEvidence?.hotspots.length ?? 0
+  const keyClueIds = new Set(
+    caseDefinition.deductions.flatMap(({ requiredNodes }) => requiredNodes),
+  )
+  const keyHotspots =
+    currentEvidence?.hotspots.filter(({ clueId }) => keyClueIds.has(clueId)) ??
+    []
+  const nextKeyHotspot = keyHotspots.find(
+    ({ clueId }) => !discoveredSet.has(clueId),
+  )
+  const nextEvidence = caseDefinition.evidence.find(
+    ({ id, hotspots }) =>
+      id !== currentEvidence?.id &&
+      hotspots.some(
+        ({ clueId }) => keyClueIds.has(clueId) && !discoveredSet.has(clueId),
+      ),
+  )
+  const recordedClue = caseDefinition.clues.find(
+    ({ id }) => id === recordedClueId,
+  )
+  const clueTitle = (clueId: string) => {
+    const clue = caseDefinition.clues.find(({ id }) => id === clueId)
+    return clue ? text(clue.titleKey) : clueId
+  }
+  const recordClue = useCallback(
+    (clueId: string) => {
+      discoverClue(clueId)
+      setRecordedClueId(clueId)
+    },
+    [discoverClue],
+  )
   const hotspotEvaluation = activeHotspot
     ? evaluateHotspot(activeHotspot, {
         selectedTool,
@@ -144,6 +187,7 @@ export function InvestigationWorkbench({
     (hotspotEvaluation?.status === 'pending' &&
       hotspotEvaluation.reason === 'insufficient-dwell')
   const autoObserving =
+    !guided &&
     usesStaticModel &&
     Boolean(
       activeHotspot &&
@@ -178,10 +222,63 @@ export function InvestigationWorkbench({
       observationStartedAt.current = null
       setIsObserving(false)
       setDwellMs(0)
+      setGuidedHotspotId(undefined)
       selectTool(toolId)
     },
     [selectTool],
   )
+
+  const inspectClue = (
+    hotspot: HotspotDefinition,
+    evidenceId = currentEvidence?.id,
+  ) => {
+    if (!evidenceId) return
+    setActiveSection('evidence')
+    setCurrentEvidence(evidenceId)
+    changeTool(hotspot.requiredTool)
+    setGuidedHotspotId(hotspot.id)
+    setRecordedClueId(undefined)
+    setCommand((previous) => ({
+      sequence: previous.sequence + 1,
+      type: 'focus-clue',
+      hotspot,
+    }))
+  }
+
+  const findClue = (clueId: string) => {
+    const evidence = caseDefinition.evidence.find(({ hotspots }) =>
+      hotspots.some((hotspot) => hotspot.clueId === clueId),
+    )
+    const hotspot = evidence?.hotspots.find(
+      (hotspot) => hotspot.clueId === clueId,
+    )
+    if (evidence && hotspot) inspectClue(hotspot, evidence.id)
+  }
+
+  const continueInvestigation = () => {
+    if (nextKeyHotspot) {
+      inspectClue(nextKeyHotspot)
+    } else if (nextEvidence) {
+      const hotspot = nextEvidence.hotspots.find(
+        ({ clueId }) => keyClueIds.has(clueId) && !discoveredSet.has(clueId),
+      )
+      if (hotspot) inspectClue(hotspot, nextEvidence.id)
+    } else {
+      setRecordedClueId(undefined)
+      setActiveSection('deduction')
+    }
+  }
+
+  const recordGuidedClue = () => {
+    if (
+      !guidedHotspot ||
+      selectedTool !== guidedHotspot.requiredTool ||
+      !guidedHotspot.prerequisites.every((id) => discoveredSet.has(id))
+    )
+      return
+    recordClue(guidedHotspot.clueId)
+    setGuidedHotspotId(undefined)
+  }
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -197,7 +294,7 @@ export function InvestigationWorkbench({
   }, [changeTool])
 
   useEffect(() => {
-    if ((!isObserving && !autoObserving) || !activeHotspot) {
+    if (guided || (!isObserving && !autoObserving) || !activeHotspot) {
       observationStartedAt.current = null
       return
     }
@@ -214,7 +311,7 @@ export function InvestigationWorkbench({
         discoveredClueIds: discoveredSet,
       })
       if (result.status === 'discovered') {
-        discoverClue(activeHotspot.clueId)
+        recordClue(activeHotspot.clueId)
         observationStartedAt.current = null
         setIsObserving(false)
         setDwellMs(0)
@@ -233,13 +330,14 @@ export function InvestigationWorkbench({
     autoObserving,
     cameraObservation,
     discoveredSet,
-    discoverClue,
+    recordClue,
+    guided,
     isObserving,
     selectedTool,
   ])
 
   const beginObservation = () => {
-    if (!hotspotAligned) return
+    if (guided || !hotspotAligned) return
     observationStartedAt.current = performance.now()
     setDwellMs(0)
     setIsObserving(true)
@@ -417,8 +515,10 @@ export function InvestigationWorkbench({
                   ? authoringHotspot
                   : undefined
               }
+              guidedHotspot={guidedHotspot}
+              onGuidedRecord={recordGuidedClue}
             />
-            {activeHotspot ? (
+            {activeHotspot && !guided ? (
               <button
                 className={`${styles.hotspotSignal} ${usesStaticModel ? styles.surfaceSignal : ''} ${hotspotAligned ? styles.hotspotAligned : ''}`}
                 disabled={!hotspotAligned}
@@ -437,6 +537,20 @@ export function InvestigationWorkbench({
                 <span aria-hidden="true" />
                 <small>{text(hotspotFeedbackKey)}</small>
               </button>
+            ) : null}
+            {recordedClue ? (
+              <div className={styles.discoveryNotice} role="status">
+                <CheckCircle2 aria-hidden="true" size={22} />
+                <div>
+                  <span>线索已记录</span>
+                  <strong>{text(recordedClue.titleKey)}</strong>
+                </div>
+                {guided ? (
+                  <button type="button" onClick={continueInvestigation}>
+                    {nextKeyHotspot || nextEvidence ? '继续下一步' : '开始推理'}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
             <div className={styles.scanReadout} aria-hidden="true">
               <span>{text('ui.viewerLive')}</span>
@@ -499,6 +613,8 @@ export function InvestigationWorkbench({
                     type="button"
                     onClick={() => {
                       endObservation()
+                      setGuidedHotspotId(undefined)
+                      setRecordedClueId(undefined)
                       setCurrentEvidence(evidence.id)
                       issueCommand('reset')
                     }}
@@ -522,7 +638,62 @@ export function InvestigationWorkbench({
             })}
           </ol>
 
-          <section className={styles.toolInfo} aria-live="polite">
+          <section className={styles.guidePanel} aria-label="调查引导">
+            <label className={styles.guideSwitch}>
+              <input
+                type="checkbox"
+                checked={guided}
+                onChange={(event) => {
+                  endObservation()
+                  setGuidedHotspotId(undefined)
+                  setGuided(event.target.checked)
+                }}
+              />
+              轻松调查
+            </label>
+            {guided ? (
+              <>
+                <p>
+                  关键线索{' '}
+                  {
+                    keyHotspots.filter(({ clueId }) =>
+                      discoveredSet.has(clueId),
+                    ).length
+                  }{' '}
+                  / {keyHotspots.length}
+                </p>
+                <strong>
+                  {nextKeyHotspot
+                    ? clueTitle(nextKeyHotspot.clueId)
+                    : '这件物证的关键线索已齐'}
+                </strong>
+                <p>
+                  {guidedHotspot
+                    ? '工具和视角已准备好。点击物证上的“记录线索”。'
+                    : nextKeyHotspot
+                      ? '点击下方按钮，自动选好工具并带你找到位置。'
+                      : '其他痕迹可以稍后再查，先继续推进案件。'}
+                </p>
+                <button type="button" onClick={continueInvestigation}>
+                  {nextKeyHotspot
+                    ? guidedHotspot
+                      ? '重新定位'
+                      : '定位并检查'
+                    : nextEvidence
+                      ? `继续检查${text(nextEvidence.titleKey)}`
+                      : '线索已齐，开始推理'}
+                </button>
+              </>
+            ) : (
+              <p>自由旋转、切换工具，在可疑表面保持观察以记录线索。</p>
+            )}
+          </section>
+
+          <section
+            className={styles.toolInfo}
+            aria-live="polite"
+            hidden={guided}
+          >
             <p>{text('ui.activeTool')}</p>
             <h2>{activeTool.name}</h2>
             <span>{activeTool.description}</span>
@@ -539,7 +710,9 @@ export function InvestigationWorkbench({
               <div className={styles.recordedClue} role="status">
                 <span>{text('ui.clueRecorded')}</span>
                 <strong>{text(latestDiscoveredClue.titleKey)}</strong>
-                <p>{text(latestDiscoveredClue.descriptionKey)}</p>
+                <p hidden={guided}>
+                  {text(latestDiscoveredClue.descriptionKey)}
+                </p>
               </div>
             ) : (
               <p>{text('ui.noFindings')}</p>
@@ -563,7 +736,7 @@ export function InvestigationWorkbench({
         className={styles.archiveWorkspace}
         hidden={activeSection !== 'deduction'}
       >
-        <DeductionBoard bundle={bundle} />
+        <DeductionBoard bundle={bundle} guided={guided} onFindClue={findClue} />
       </div>
 
       <div

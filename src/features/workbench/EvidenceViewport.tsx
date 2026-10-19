@@ -14,6 +14,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentRef,
 } from 'react'
 import { Box3, Raycaster, Vector2, Vector3 } from 'three'
 
@@ -35,6 +36,8 @@ export type ViewCommand = {
     | 'zoom-out'
     | 'reset'
     | 'inspect'
+    | 'focus-clue'
+  hotspot?: HotspotDefinition
 }
 
 type EvidenceViewportProps = {
@@ -47,6 +50,8 @@ type EvidenceViewportProps = {
     center: [number, number, number]
     radius: number
   }
+  guidedHotspot?: HotspotDefinition
+  onGuidedRecord?: () => void
 }
 
 export type CameraObservation = {
@@ -56,6 +61,8 @@ export type CameraObservation = {
   measuredDimensions?: { width?: number; depth?: number }
 }
 
+type MarkerPosition = { x: number; y: number; visible: boolean }
+
 export function EvidenceViewport({
   evidence,
   hotspot,
@@ -63,6 +70,8 @@ export function EvidenceViewport({
   command,
   onObservationChange,
   authoringHotspot,
+  guidedHotspot,
+  onGuidedRecord,
 }: EvidenceViewportProps) {
   const [webGLAvailable] = useState(supportsWebGL)
   const evidenceId = evidence.id
@@ -73,6 +82,20 @@ export function EvidenceViewport({
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [tabletopBounds, setTabletopBounds] = useState<Box3 | null>(null)
   const [targetedHotspotId, setTargetedHotspotId] = useState<string>()
+  const [markerPosition, setMarkerPosition] = useState<MarkerPosition>({
+    x: 50,
+    y: 50,
+    visible: false,
+  })
+  const updateMarkerPosition = useCallback((next: MarkerPosition) => {
+    setMarkerPosition((previous) =>
+      previous.x === next.x &&
+      previous.y === next.y &&
+      previous.visible === next.visible
+        ? previous
+        : next,
+    )
+  }, [])
   const [measurementPoints, setMeasurementPoints] = useState<Vector3[]>([])
   const [measuredDimensions, setMeasuredDimensions] = useState<{
     width?: number
@@ -107,6 +130,22 @@ export function EvidenceViewport({
       axis === 'width' ? max.z : min.z,
     )
     measureBetween(first, new Vector3(max.x, max.y, max.z))
+  }
+  const recordGuidedInspection = () => {
+    if (!guidedHotspot || guidedHotspot.requiredTool !== selectedTool) return
+    if (guidedHotspot.measurement) {
+      if (!tabletopBounds || tabletopBounds.isEmpty()) return
+      const size = tabletopBounds.getSize(new Vector3())
+      const { width, depth, tolerance } = guidedHotspot.measurement
+      if (
+        Math.abs(size.x - width) > tolerance ||
+        Math.abs(size.z - depth) > tolerance
+      )
+        return
+      measureTabletop('width')
+      measureTabletop('depth')
+    }
+    onGuidedRecord?.()
   }
 
   if (!webGLAvailable) {
@@ -252,8 +291,23 @@ export function EvidenceViewport({
           onTargetChange={setTargetedHotspotId}
           measuredDimensions={measuredDimensions}
           onObservationChange={onObservationChange}
+          onMarkerPositionChange={updateMarkerPosition}
         />
       </Canvas>
+
+      {guidedHotspot &&
+      markerPosition.visible &&
+      (!isStatic || assetStatus === 'ready') ? (
+        <button
+          className={styles.guidedMarker}
+          type="button"
+          style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` }}
+          onClick={recordGuidedInspection}
+        >
+          <span aria-hidden="true">＋</span>
+          {selectedTool === 'measurement' ? '测量并记录线索' : '记录线索'}
+        </button>
+      ) : null}
 
       {isStatic && assetStatus !== 'ready' ? (
         <div className={styles.assetStatus} role="status">
@@ -622,6 +676,7 @@ function CameraController({
   onTargetChange,
   measuredDimensions,
   onObservationChange,
+  onMarkerPositionChange,
 }: {
   command: ViewCommand
   evidence: EvidenceDefinition
@@ -631,8 +686,10 @@ function CameraController({
   onTargetChange: (hotspotId?: string) => void
   measuredDimensions: { width?: number; depth?: number }
   onObservationChange: (observation: CameraObservation) => void
+  onMarkerPositionChange: (position: MarkerPosition) => void
 }) {
   const { camera, scene } = useThree()
+  const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
   const isStatic = evidence.representation === 'glb'
   const target = useMemo(
     () =>
@@ -661,6 +718,12 @@ function CameraController({
   )
 
   const reportObservation = useCallback(() => {
+    const projected = hotspotPosition.clone().project(camera)
+    onMarkerPositionChange({
+      x: Math.round((projected.x + 1) * 5000) / 100,
+      y: Math.round((1 - projected.y) * 5000) / 100,
+      visible: projected.z > -1 && projected.z < 1,
+    })
     const hotspotToCamera = camera.position.clone().sub(hotspotPosition)
     const cameraDistance = hotspotToCamera.length()
     const viewAngleDeg =
@@ -678,6 +741,7 @@ function CameraController({
     onObservationChange,
     targetedHotspotId,
     measuredDimensions,
+    onMarkerPositionChange,
   ])
 
   useEffect(() => {
@@ -701,7 +765,17 @@ function CameraController({
       return
     }
     onTargetChange(undefined)
-    if (command.type === 'reset') {
+    if (command.type === 'focus-clue' && command.hotspot) {
+      target.fromArray(command.hotspot.shape.center)
+      const normal = new Vector3(
+        ...(command.hotspot.surfaceNormal ?? [0, 0, 1]),
+      )
+      normal.add(new Vector3(0.18, 0.18, 0.12)).normalize()
+      camera.position
+        .copy(target)
+        .addScaledVector(normal, isStatic ? 1.65 : 3.8)
+    } else if (command.type === 'reset') {
+      target.fromArray(isStatic ? evidence.initialCamera.target : [0, 0.7, 0])
       camera.position.fromArray(
         isStatic ? evidence.initialCamera.position : [4.8, 3.2, 5.2],
       )
@@ -724,6 +798,8 @@ function CameraController({
     offset.clampLength(limits.minDistance, limits.maxDistance)
     camera.position.copy(target).add(offset)
     camera.lookAt(target)
+    controls.current?.target.copy(target)
+    controls.current?.update()
     camera.updateProjectionMatrix()
   }, [
     camera,
@@ -746,6 +822,7 @@ function CameraController({
 
   return (
     <OrbitControls
+      ref={controls}
       enableDamping
       keyEvents={isStatic}
       dampingFactor={0.08}

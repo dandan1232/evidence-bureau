@@ -107,7 +107,7 @@
   "ui.navHints": "提示",
   "ui.controls": "操作说明",
   "ui.controlsTitle": "查看器操作",
-  "ui.controlsDescription": "在物证上拖动以旋转视角，滚轮缩放。将指针停留在桌子的可疑表面以记录观察；测量工具支持点击两点测距。键盘用户可调整视角后使用“扫描视野中心”。",
+  "ui.controlsDescription": "默认开启轻松调查：先点“定位并检查”，再点击物证上的记录标记。工具和视角会自动准备好，每件物证找到两条关键线索即可继续。关闭“轻松调查”后，可以自行旋转、缩放、切换工具，在可疑表面保持观察；测量工具支持点击两点测距。",
   "ui.controlsKeyboard": "数字键 1–5 可切换调查工具",
   "ui.evidenceItem": "当前物证",
   "ui.proxyGeometry": "示意物证",

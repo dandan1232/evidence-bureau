@@ -191,6 +191,98 @@
   background: #0b0d0e;
 }
 
+.guidePanel {
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.guideSwitch {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text-strong);
+  cursor: pointer;
+}
+
+.guideSwitch input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--color-primary-strong);
+}
+
+.guidePanel p {
+  margin: 0.65rem 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: 1.7;
+}
+
+.guidePanel strong {
+  display: block;
+  color: var(--color-text-strong);
+  font-size: var(--text-body);
+  font-weight: 500;
+}
+
+.guidePanel > button,
+.discoveryNotice button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--color-primary-strong);
+  border-radius: 0.2rem;
+  color: var(--color-text-strong);
+  background: var(--color-primary-strong);
+  cursor: pointer;
+  font-size: var(--text-small);
+}
+
+.guidePanel > button {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.discoveryNotice {
+  position: absolute;
+  z-index: 4;
+  top: 3.5rem;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  align-items: center;
+  padding: 0.85rem 1rem;
+  gap: 0.8rem;
+  border: 1px solid var(--color-success);
+  background: var(--color-surface);
+  transform: translateX(-50%);
+}
+
+.discoveryNotice > svg {
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+
+.discoveryNotice span,
+.discoveryNotice strong {
+  display: block;
+  font-size: var(--text-small);
+}
+
+.discoveryNotice span {
+  color: var(--color-success);
+}
+
+.discoveryNotice strong {
+  margin-top: 0.25rem;
+  color: var(--color-text-strong);
+  font-weight: 500;
+}
+
+.discoveryNotice button {
+  flex-shrink: 0;
+}
+
 .scanReadout {
   position: absolute;
   top: 1rem;
@@ -658,6 +750,13 @@
 }
 
 @media (max-width: 49.99rem) {
+  .discoveryNotice {
+    flex-wrap: wrap;
+  }
+
+  .discoveryNotice button {
+    width: 100%;
+  }
   .workbench {
     min-height: 100svh;
     overflow: visible;
