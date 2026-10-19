@@ -439,9 +439,8 @@ export function InvestigationWorkbench({
               </button>
             ) : null}
             <div className={styles.scanReadout} aria-hidden="true">
-              <span>SCAN / LIVE</span>
-              <span>ROTATION: FREE</span>
-              <span>{usesStaticModel ? 'UNITS: METERS' : 'LOD: PROXY'}</span>
+              <span>{text('ui.viewerLive')}</span>
+              <span>{text('ui.viewerRotate')}</span>
             </div>
           </div>
 
@@ -481,7 +480,12 @@ export function InvestigationWorkbench({
           <div className={styles.railHeading}>
             <span>{text('ui.evidenceManifest')}</span>
             <strong id="evidence-list-title">
-              01 / {String(caseDefinition.evidence.length).padStart(2, '0')}
+              {String(
+                caseDefinition.evidence.findIndex(
+                  ({ id }) => id === currentEvidence.id,
+                ) + 1,
+              ).padStart(2, '0')}{' '}
+              / {String(caseDefinition.evidence.length).padStart(2, '0')}
             </strong>
           </div>
 

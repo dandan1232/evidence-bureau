@@ -2,10 +2,7 @@
   min-height: 0;
   overflow: auto;
   padding: clamp(2rem, 5vw, 5rem);
-  background:
-    linear-gradient(90deg, transparent 50%, rgb(255 255 255 / 0.018) 50%) 0 0 /
-      4rem 4rem,
-    var(--color-background);
+  background: var(--color-background);
 }
 
 .heading {
@@ -23,7 +20,6 @@
   display: grid;
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid var(--color-accent);
   color: var(--color-accent);
   place-items: center;
 }
@@ -34,10 +30,8 @@
 .clueNumber,
 .source,
 .clueList footer {
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
 }
 
 .heading p {
@@ -48,9 +42,9 @@
 .heading h1 {
   margin: 0;
   color: var(--color-text-strong);
-  font-size: clamp(1.9rem, 4vw, 3rem);
-  font-weight: 560;
-  letter-spacing: -0.035em;
+  font-size: 2.25rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
 .heading div > span {
@@ -58,13 +52,12 @@
   max-width: 42rem;
   margin-top: 0.65rem;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  line-height: 1.6;
+  font-size: var(--text-body);
+  line-height: 1.75;
 }
 
 .heading > strong {
-  padding: 0.45rem 0.55rem;
-  border: 1px solid var(--color-border);
+  padding-top: 0.45rem;
   color: var(--color-text-muted);
   font-weight: 500;
 }
@@ -93,7 +86,7 @@
 .emptyState p {
   margin: 0.75rem 0 0;
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--text-body);
   line-height: 1.7;
 }
 
@@ -152,8 +145,8 @@
 .clueList h2 {
   margin: 0;
   color: var(--color-text-strong);
-  font-size: 1.35rem;
-  font-weight: 560;
+  font-size: var(--text-subheading);
+  font-weight: 600;
 }
 
 .source {

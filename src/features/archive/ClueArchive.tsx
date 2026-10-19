@@ -26,13 +26,15 @@ export function ClueArchive({
   )
 
   return (
-    <section className={styles.archive} aria-labelledby="archive-title">
+    <section
+      className={`${styles.archive} document-surface`}
+      aria-labelledby="archive-title"
+    >
       <header className={styles.heading}>
         <div className={styles.headingIcon} aria-hidden="true">
           <Archive size={22} />
         </div>
         <div>
-          <p>ARCHIVE / VERIFIED FINDINGS</p>
           <h1 id="archive-title">{text('ui.archiveTitle')}</h1>
           <span>{text('ui.archiveDescription')}</span>
         </div>
@@ -71,9 +73,7 @@ export function ClueArchive({
                   <FileCheck2 aria-hidden="true" size={17} />
                 </div>
                 <article>
-                  <p>
-                    {text('ui.observationRecord')} / {clue.id.toUpperCase()}
-                  </p>
+                  <p>{text('ui.observationRecord')}</p>
                   <h2>{text(clue.titleKey)}</h2>
                   <span className={styles.source}>
                     {text('ui.sourceEvidence')} ·{' '}

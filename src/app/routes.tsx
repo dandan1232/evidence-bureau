@@ -118,7 +118,7 @@ function StatusPage({ title, detail, onRetry }: StatusPageProps) {
   return (
     <main className={styles.statusPage} aria-busy={!onRetry}>
       <section className={styles.statusPanel} aria-live="polite">
-        <p className={styles.eyebrow}>EVIDENCE BUREAU / ARCHIVE</p>
+        <p className={styles.eyebrow}>物证档案局</p>
         <h1>{title}</h1>
         <p>{detail}</p>
         {onRetry ? (

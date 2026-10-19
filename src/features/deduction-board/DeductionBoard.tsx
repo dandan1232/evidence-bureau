@@ -137,7 +137,7 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
   const availableClueCount = availableClues.length
   const canAddAll = availableClueCount > 0 && !allAvailableCluesPlaced
 
-  const boardSummary = `${String(placedClueCount).padStart(2, '0')} NODES / ${String(conclusionCount).padStart(2, '0')} RULES`
+  const boardSummary = `${placedClueCount} 条线索 · ${conclusionCount} 项判断`
 
   const handleAddAll = () => {
     if (canAddAll) {
@@ -199,7 +199,6 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
           <GitFork size={22} />
         </div>
         <div>
-          <p>DEDUCTION / RULE-BASED ANALYSIS</p>
           <h1 id="deduction-title">{text('ui.deductionTitle')}</h1>
           <span>{text('ui.deductionDescription')}</span>
         </div>
@@ -412,7 +411,7 @@ export function DeductionBoard({ bundle }: DeductionBoardProps) {
             aria-labelledby="final-chain-title"
           >
             <div>
-              <span>03 / CASE CLOSURE</span>
+              <span>{text('ui.debriefTitle')}</span>
               <h2 id="final-chain-title">{text('ui.finalChainTitle')}</h2>
               <p>{text('ui.finalChainDescription')}</p>
             </div>

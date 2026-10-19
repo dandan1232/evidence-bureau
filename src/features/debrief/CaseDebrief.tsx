@@ -21,7 +21,7 @@ export function CaseDebrief({ bundle }: CaseDebriefProps) {
   if (!rating || !completedAt) {
     return (
       <main className={styles.unavailable}>
-        <p>CASE STATUS / OPEN</p>
+        <p>{text('ui.status.open')}</p>
         <h1>尚未形成可归档的结案报告</h1>
         <span>请先在推理板完成最终证据链并提交结案。</span>
         <Link to={`/cases/${caseDefinition.id}/investigation`}>
@@ -34,10 +34,13 @@ export function CaseDebrief({ bundle }: CaseDebriefProps) {
   const appendixUnlocked = rating.grade === 'S' || rating.grade === 'A'
 
   return (
-    <main className={styles.debrief} data-grade={rating.grade}>
+    <main
+      className={`${styles.debrief} document-surface`}
+      data-grade={rating.grade}
+    >
       <header className={styles.reportHeader}>
         <div>
-          <p>EVIDENCE BUREAU / CLOSED CASE</p>
+          <p>{text('ui.bureauName')}</p>
           <span>{caseDefinition.metadata.caseNumber}</span>
         </div>
         <strong>
@@ -78,7 +81,9 @@ export function CaseDebrief({ bundle }: CaseDebriefProps) {
           </div>
           <div>
             <span>{text('ui.elapsedTime')}</span>
-            <strong>{rating.elapsedMinutes} min</strong>
+            <strong>
+              {rating.elapsedMinutes} {text('ui.minutes')}
+            </strong>
           </div>
         </section>
 
@@ -117,7 +122,10 @@ export function CaseDebrief({ bundle }: CaseDebriefProps) {
         </section>
 
         <footer className={styles.reportFooter}>
-          <span>CLOSED / {new Date(completedAt).toLocaleString('zh-CN')}</span>
+          <span>
+            {text('ui.caseClosed')} ·{' '}
+            {new Date(completedAt).toLocaleString('zh-CN')}
+          </span>
           <Link to={`/cases/${caseDefinition.id}/investigation`}>
             {text('ui.returnToInvestigation')}
           </Link>

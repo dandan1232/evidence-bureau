@@ -1,13 +1,13 @@
 import {
   Accessibility,
+  ArrowDown,
   ArrowRight,
   Clock3,
-  FileSearch,
   MapPin,
   Monitor,
   Settings2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { translate } from '../../cases/localization'
@@ -32,6 +32,22 @@ export function CaseBriefingPage({ bundle }: CaseBriefingPageProps) {
   )
   const { metadata, evidence } = caseDefinition
   const text = (key: string) => translate(messages, key)
+  const briefingRef = useRef<HTMLElement>(null)
+  const manifestRef = useRef<HTMLElement>(null)
+  const enterLabel = text(
+    hasProgress ? 'ui.continueInvestigation' : 'ui.startInvestigation',
+  )
+
+  const readSection = (section: HTMLElement | null) => {
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    section?.scrollIntoView({
+      behavior: reduceMotion || prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'start',
+    })
+    section?.focus({ preventScroll: true })
+  }
 
   return (
     <main
@@ -40,13 +56,31 @@ export function CaseBriefingPage({ bundle }: CaseBriefingPageProps) {
       <header className={styles.masthead}>
         <a className={styles.wordmark} href="#/" aria-label="物证档案局首页">
           <span className={styles.mark} aria-hidden="true">
-            EB
+            证
           </span>
           <span>
             <strong>{text('ui.bureauName')}</strong>
-            <small>EVIDENCE BUREAU</small>
+            <small>Evidence Bureau</small>
           </span>
         </a>
+
+        <nav
+          className={styles.pageNav}
+          aria-label={text('ui.briefingNavigation')}
+        >
+          <button
+            type="button"
+            onClick={() => readSection(briefingRef.current)}
+          >
+            {text('ui.caseBrief')}
+          </button>
+          <button
+            type="button"
+            onClick={() => readSection(manifestRef.current)}
+          >
+            {text('ui.navEvidence')}
+          </button>
+        </nav>
 
         <div className={styles.headerMeta}>
           <span className={styles.connectionState}>
@@ -84,68 +118,106 @@ export function CaseBriefingPage({ bundle }: CaseBriefingPageProps) {
         </div>
       </header>
 
-      <section className={styles.caseLayout} aria-labelledby="case-title">
-        <div className={styles.caseRecord}>
-          <div className={styles.recordHeader}>
-            <p className={styles.recordType}>{text('ui.caseFile')}</p>
-            <p className={styles.caseNumber}>{metadata.caseNumber}</p>
-            <span className={styles.caseStatus}>
-              {text(`ui.status.${metadata.status}`)}
-            </span>
-          </div>
-
-          <div className={styles.titleBlock}>
-            <p className={styles.subtitle}>{text(metadata.subtitleKey)}</p>
-            <h1 id="case-title">{text(metadata.titleKey)}</h1>
-            <p className={styles.summary}>{text(metadata.summaryKey)}</p>
-          </div>
-
-          <dl className={styles.facts}>
-            <div>
-              <dt>
-                <MapPin aria-hidden="true" size={16} />
-                {text('ui.location')}
-              </dt>
-              <dd>{text(metadata.locationKey)}</dd>
+      <section className={styles.hero} aria-labelledby="case-title">
+        <div className={styles.heroInner}>
+          <div className={styles.heroCopy}>
+            <div className={styles.recordHeader}>
+              <p className={styles.recordType}>{text('ui.caseFile')}</p>
+              <p className={styles.caseNumber}>{metadata.caseNumber}</p>
+              <span className={styles.caseStatus}>
+                {text(`ui.status.${metadata.status}`)}
+              </span>
             </div>
-            <div>
-              <dt>
-                <Clock3 aria-hidden="true" size={16} />
-                {text('ui.estimatedTime')}
-              </dt>
-              <dd>
-                {metadata.estimatedMinutes[0]}–{metadata.estimatedMinutes[1]}{' '}
-                {text('ui.minutes')}
-              </dd>
-            </div>
-          </dl>
 
-          <div className={styles.actionRow}>
-            <Link
-              className={styles.primaryAction}
-              to={`/cases/${caseDefinition.id}/investigation`}
-            >
-              {text(
-                hasProgress
-                  ? 'ui.continueInvestigation'
-                  : 'ui.startInvestigation',
-              )}
-              <ArrowRight aria-hidden="true" size={18} />
-            </Link>
-            <p className={styles.deviceAdvice}>
-              <Monitor aria-hidden="true" size={17} />
-              {text('ui.deviceAdvice')}
-            </p>
+            <div className={styles.titleBlock}>
+              <h1 id="case-title">{text(metadata.titleKey)}</h1>
+              <p className={styles.subtitle}>{text(metadata.subtitleKey)}</p>
+            </div>
+
+            <div className={styles.actionRow}>
+              <Link
+                className={styles.primaryAction}
+                to={`/cases/${caseDefinition.id}/investigation`}
+              >
+                {enterLabel}
+                <ArrowRight aria-hidden="true" size={18} />
+              </Link>
+              <p className={styles.deviceAdvice}>
+                <Monitor aria-hidden="true" size={17} />
+                {text('ui.deviceAdvice')}
+              </p>
+            </div>
           </div>
+          {evidence[0]?.posterUrl ? (
+            <figure className={styles.heroVisual}>
+              <img
+                src={evidence[0].posterUrl}
+                alt={text(evidence[0].titleKey)}
+                width="1000"
+                height="800"
+                fetchPriority="high"
+              />
+              <figcaption>
+                {text('ui.sceneEvidence')} · {text(metadata.locationKey)}
+              </figcaption>
+            </figure>
+          ) : null}
         </div>
+        <div className={styles.heroFooter}>
+          <span>{text('ui.classification')}</span>
+          <button
+            type="button"
+            onClick={() => readSection(briefingRef.current)}
+          >
+            {text('ui.readCaseBrief')}
+            <ArrowDown aria-hidden="true" size={18} />
+          </button>
+        </div>
+      </section>
 
-        <aside className={styles.manifest} aria-labelledby="manifest-title">
+      <div className="document-surface">
+        <section
+          className={styles.dossier}
+          ref={briefingRef}
+          tabIndex={-1}
+          aria-labelledby="briefing-title"
+        >
+          <h2 id="briefing-title">{text('ui.caseBrief')}</h2>
+          <div className={styles.caseDetails}>
+            <p className={styles.summary}>{text(metadata.summaryKey)}</p>
+            <dl className={styles.facts}>
+              <div>
+                <dt>
+                  <MapPin aria-hidden="true" size={16} />
+                  {text('ui.location')}
+                </dt>
+                <dd>{text(metadata.locationKey)}</dd>
+              </div>
+              <div>
+                <dt>
+                  <Clock3 aria-hidden="true" size={16} />
+                  {text('ui.estimatedTime')}
+                </dt>
+                <dd>
+                  {metadata.estimatedMinutes[0]}–{metadata.estimatedMinutes[1]}{' '}
+                  {text('ui.minutes')}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        <section
+          className={styles.manifest}
+          ref={manifestRef}
+          tabIndex={-1}
+          aria-labelledby="manifest-title"
+        >
           <div className={styles.manifestHeading}>
-            <FileSearch aria-hidden="true" size={19} />
-            <div>
-              <p>{text('ui.intakeRegister')}</p>
-              <h2 id="manifest-title">{text('ui.evidenceManifest')}</h2>
-            </div>
+            <h2 id="manifest-title">{text('ui.evidenceManifest')}</h2>
+            <span>
+              {evidence.length} {text('ui.evidenceItemUnit')}
+            </span>
           </div>
 
           <ol className={styles.evidenceList}>
@@ -157,6 +229,9 @@ export function CaseBriefingPage({ bundle }: CaseBriefingPageProps) {
                 <span className={styles.evidenceName}>
                   {text(item.titleKey)}
                 </span>
+                <p className={styles.evidenceDescription}>
+                  {text(item.descriptionKey)}
+                </p>
                 <span className={styles.evidenceState}>
                   <span aria-hidden="true" />
                   {text('ui.unexamined')}
@@ -165,24 +240,25 @@ export function CaseBriefingPage({ bundle }: CaseBriefingPageProps) {
             ))}
           </ol>
 
-          <div className={styles.plan} aria-hidden="true">
-            <span className={styles.roomLabel}>407</span>
-            <span className={styles.planDesk} />
-            <span className={styles.planBed} />
-            <span className={styles.planDoor} />
-            <span className={styles.planMeasure}>4.80 M</span>
+          <div className={styles.intakeFooter}>
+            <p className={styles.chainOfCustody}>
+              {text('ui.chainOfCustody')}
+              <span>{text('ui.intakeVerified')}</span>
+            </p>
+            <Link
+              className={styles.textAction}
+              to={`/cases/${caseDefinition.id}/investigation`}
+            >
+              {text('ui.enterWorkbench')}
+              <ArrowRight aria-hidden="true" size={19} />
+            </Link>
           </div>
-
-          <p className={styles.chainOfCustody}>
-            {text('ui.chainOfCustody')}
-            <span>{text('ui.intakeVerified')}</span>
-          </p>
-        </aside>
-      </section>
+        </section>
+      </div>
 
       <footer className={styles.footer}>
-        <span>{text('ui.classification')}</span>
-        <span>CONTENT / {caseDefinition.contentVersion}</span>
+        <span>{text('ui.bureauName')}</span>
+        <span>{text('ui.progressPrivacy')}</span>
       </footer>
     </main>
   )

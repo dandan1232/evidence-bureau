@@ -1,29 +1,52 @@
+@font-face {
+  font-family: 'Bureau Sans';
+  src: url('/fonts/bureau-sans-sc.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bureau Serif';
+  src: url('/fonts/bureau-serif-sc.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 :root {
-  color: oklch(0.86 0.005 260);
-  background: oklch(0.105 0 0);
-  font-family:
-    'IBM Plex Sans SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family: var(--font-body);
   font-synthesis: none;
+  font-kerning: normal;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --color-background: oklch(0.105 0 0);
-  --color-surface: oklch(0.155 0.006 260);
-  --color-surface-raised: oklch(0.205 0.008 260);
-  --color-border: oklch(0.31 0.009 260);
-  --color-border-strong: oklch(0.4 0.012 260);
-  --color-text: oklch(0.86 0.005 260);
-  --color-text-strong: oklch(0.93 0.006 260);
-  --color-text-muted: oklch(0.68 0.012 260);
-  --color-text-subtle: oklch(0.53 0.012 260);
-  --color-primary: oklch(0.56 0.17 353.2);
-  --color-primary-strong: oklch(0.48 0.19 353.2);
-  --color-primary-light: oklch(0.74 0.12 353.2);
-  --color-accent: oklch(0.72 0.055 235);
-  --color-success: oklch(0.72 0.1 152);
+  --color-background: oklch(0.145 0.003 75);
+  --color-surface: oklch(0.185 0.004 75);
+  --color-surface-raised: oklch(0.235 0.006 75);
+  --color-border: oklch(0.3 0.006 75);
+  --color-border-strong: oklch(0.43 0.008 75);
+  --color-text: oklch(0.89 0.008 85);
+  --color-text-strong: oklch(0.95 0.01 85);
+  --color-text-muted: oklch(0.75 0.008 85);
+  --color-text-subtle: oklch(0.65 0.008 85);
+  --color-primary: oklch(0.56 0.13 27);
+  --color-primary-strong: oklch(0.47 0.12 27);
+  --color-primary-light: oklch(0.78 0.09 35);
+  --color-accent: oklch(0.79 0.025 85);
+  --color-success: oklch(0.76 0.065 150);
   --color-warning: oklch(0.76 0.12 78);
   --color-warning-dim: oklch(0.48 0.08 78);
   --color-danger: oklch(0.63 0.19 25);
-  --font-mono: 'IBM Plex Mono', 'Cascadia Mono', monospace;
+  --font-body: 'Bureau Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Bureau Serif', 'Songti SC', 'SimSun', serif;
+  --font-mono: 'Bureau Sans', 'Microsoft YaHei', sans-serif;
+  --text-caption: 0.8125rem;
+  --text-small: 0.875rem;
+  --text-body: 1rem;
+  --text-subheading: 1.25rem;
+  --text-heading: 2rem;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -40,6 +63,42 @@ body {
   min-width: 20rem;
   min-height: 100vh;
   margin: 0;
+  background: var(--color-background);
+  font-size: var(--text-body);
+  line-height: 1.7;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+h1 {
+  font-family: var(--font-display);
+}
+
+p,
+blockquote {
+  text-wrap: pretty;
+}
+
+.document-surface {
+  --color-background: oklch(0.955 0 0);
+  --color-surface: oklch(0.98 0 0);
+  --color-surface-raised: oklch(0.92 0 0);
+  --color-border: oklch(0.81 0 0);
+  --color-border-strong: oklch(0.63 0 0);
+  --color-text: oklch(0.27 0.005 75);
+  --color-text-strong: oklch(0.19 0.005 75);
+  --color-text-muted: oklch(0.43 0.005 75);
+  --color-text-subtle: oklch(0.49 0.005 75);
+  --color-primary-light: oklch(0.43 0.12 27);
+  --color-accent: oklch(0.43 0.08 35);
+  --color-success: oklch(0.4 0.065 150);
+  --color-warning: oklch(0.47 0.09 78);
+  --color-danger: oklch(0.48 0.12 25);
+  color: var(--color-text);
   background: var(--color-background);
 }
 

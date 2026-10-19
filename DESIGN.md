@@ -2,24 +2,26 @@
 
 ## 1. Concept
 
-**深夜证物实验室：灰白扫描物证悬浮在低照度工作台上，暗红校验章标记真正重要的状态。**
+**中文悬疑档案：宋体案件标题与清晰黑体正文构成阅读层次，深色验物台为物证留出空间，暗红标记重要状态。**
 
 这是产品界面，不是品牌落地页。气氛来自材质、层级、留白和精确反馈，而不是霓虹特效。视觉优先级始终是：物证几何 → 当前工具和异常信号 → 档案文字 → 环境装饰。
 
+案件入口参考南孚海外官网的大幅产品主视觉与深浅分区节奏：首屏保留案件标题、物证大图和开始操作，完整案情和物证目录在下方分段展开。档案、材料、结案报告使用中性浅灰阅读底；3D 调查台、推理与提示工具保持深色。
+
 ## 2. Color Strategy
 
-采用 Restrained 策略。背景为近黑纯中性；品牌主色沿 `353°` 暗红，用于当前选择、封缄、关键确认和错误；冷灰蓝用于普通扫描状态；琥珀只用于警告。
+采用 Restrained 策略。背景为近黑的中性石墨色；品牌主色为偏砖红的暗红，用于当前选择、封缄、关键确认和错误；浅灰用于普通状态；琥珀只用于警告。
 
 ```css
 :root {
-  --color-bg: oklch(0.105 0 0);
-  --color-surface: oklch(0.155 0.006 260);
-  --color-surface-raised: oklch(0.205 0.008 260);
-  --color-ink: oklch(0.93 0.006 260);
-  --color-muted: oklch(0.68 0.012 260);
-  --color-primary: oklch(0.56 0.17 353.2);
-  --color-primary-strong: oklch(0.48 0.19 353.2);
-  --color-accent: oklch(0.72 0.055 235);
+  --color-bg: oklch(0.145 0.003 75);
+  --color-surface: oklch(0.185 0.004 75);
+  --color-surface-raised: oklch(0.235 0.006 75);
+  --color-ink: oklch(0.95 0.01 85);
+  --color-muted: oklch(0.75 0.008 85);
+  --color-primary: oklch(0.56 0.13 27);
+  --color-primary-strong: oklch(0.47 0.12 27);
+  --color-accent: oklch(0.79 0.025 85);
   --color-warning: oklch(0.76 0.12 78);
   --color-success: oklch(0.72 0.10 152);
   --color-danger: oklch(0.63 0.19 25);
@@ -32,12 +34,15 @@
 
 ## 3. Typography
 
-- UI 主字体：`"IBM Plex Sans SC", "Noto Sans SC", system-ui, sans-serif`。
-- 数字与编号：`"IBM Plex Mono", "SFMono-Regular", Consolas, monospace`。
-- 不使用独立展示字体；产品任务优先于品牌戏剧性。
-- 正文 16px/1.65；紧凑标签 12～13px；页面标题 32～40px；工作台标题 20～24px。
+- UI 和正文：随站点发布的 Noto Sans SC（`Bureau Sans`）；系统后备为苹方、微软雅黑。
+- 案件、档案主标题与中文标识：随站点发布的 Noto Serif SC（`Bureau Serif`），不用于按钮和正文。
+- 字体子集和许可证位于 `public/fonts/`，生成方式见该目录 README。
+- 固定字号层次：说明标签 0.8125rem、次要操作 0.875rem、正文 1rem、小标题 1.25rem、页面标题 2～2.25rem。案件入口标题宽屏 5rem、中等屏幕 4rem、手机 2.5～3rem。
+- 正文行高 1.75～1.9；标题不使用负字距；不使用重复英文眉题制造层次。
 - 正文行长控制在 65～75ch；档案正文可略窄。
 - 编号使用 `font-variant-numeric: tabular-nums`。
+
+浅色阅读区使用全局 `.document-surface`，统一覆盖背景、正文、辅助文字、边框和语义颜色，避免各页分别维护一套浅色值。
 
 ## 4. Spacing and Geometry
 
@@ -46,7 +51,7 @@
 - 常规控件高度 40px，紧凑工具按钮 36px，关键主操作 44px。
 - 圆角克制：控件 4px，主要面板 8px；不用胶囊形按钮作为默认。
 - 边框 1px；不使用彩色粗侧边框。
-- 案件入口使用不对称 12 栏布局；调查工作台采用左侧物证主视区、右侧信息轨道、底部工具栏。
+- 案件入口以不对称的大幅物证与标题构成整屏主视觉，导航收敛为案情、物证和设置；下方采用标题与案情分栏、横向物证登记行。调查工作台采用左侧物证主视区、右侧信息轨道、底部工具栏。
 - 避免卡片套卡片。分区优先用留白、细线、背景层级和标题建立关系。
 
 ## 5. Component Vocabulary

@@ -34,7 +34,6 @@ export function HintPanel({ bundle }: HintPanelProps) {
           <Lightbulb size={22} />
         </div>
         <div>
-          <p>ASSISTED REVIEW / ON REQUEST</p>
           <h1 id="hints-title">{text('ui.hintsTitle')}</h1>
           <span>{text('ui.hintsDescription')}</span>
         </div>

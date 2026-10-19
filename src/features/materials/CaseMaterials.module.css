@@ -2,10 +2,7 @@
   min-height: 0;
   overflow: auto;
   padding: clamp(2rem, 5vw, 5rem);
-  background:
-    linear-gradient(90deg, transparent 50%, rgb(255 255 255 / 0.018) 50%) 0 0 /
-      4rem 4rem,
-    var(--color-background);
+  background: var(--color-background);
 }
 
 .heading {
@@ -23,7 +20,6 @@
   display: grid;
   width: 2.5rem;
   height: 2.5rem;
-  border: 1px solid var(--color-accent);
   color: var(--color-accent);
   place-items: center;
 }
@@ -35,10 +31,8 @@
 .documentNumber,
 .documentList article > p,
 .documentList article > span {
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
 }
 
 .heading p,
@@ -50,9 +44,9 @@
 .heading h1 {
   margin: 0;
   color: var(--color-text-strong);
-  font-size: clamp(1.9rem, 4vw, 3rem);
-  font-weight: 560;
-  letter-spacing: -0.035em;
+  font-size: 2.25rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
 .heading div > span {
@@ -60,13 +54,12 @@
   max-width: 44rem;
   margin-top: 0.65rem;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  line-height: 1.6;
+  font-size: var(--text-body);
+  line-height: 1.75;
 }
 
 .heading > strong {
-  padding: 0.45rem 0.55rem;
-  border: 1px solid var(--color-border);
+  padding-top: 0.45rem;
   color: var(--color-text-muted);
   font-weight: 500;
 }
@@ -75,16 +68,15 @@
   display: grid;
   width: min(100%, 72rem);
   margin: 2rem auto 0;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-  gap: clamp(2rem, 5vw, 5rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 4rem);
 }
 
 .sectionHeading {
-  display: grid;
+  display: flex;
   align-items: center;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border-strong);
-  grid-template-columns: 2.25rem minmax(0, 1fr);
   gap: 0.75rem;
 }
 
@@ -97,8 +89,8 @@
 .sectionHeading h2 {
   margin: 0;
   color: var(--color-text-strong);
-  font-size: 1.1rem;
-  font-weight: 560;
+  font-size: var(--text-subheading);
+  font-weight: 600;
 }
 
 .statementList,
@@ -125,28 +117,28 @@
 }
 
 .statementList article {
-  padding: 1rem 0 0 2.25rem;
+  padding-top: 1rem;
 }
 
 .statementList article > p {
   margin: 0;
   color: var(--color-accent);
-  font-size: 0.73rem;
+  font-size: var(--text-small);
 }
 
 .statementList h3,
 .documentList h3 {
-  margin: 0.35rem 0 0;
+  margin: 0.5rem 0 0;
   color: var(--color-text-strong);
-  font-size: 1rem;
-  font-weight: 560;
+  font-size: 1.125rem;
+  font-weight: 500;
 }
 
 .statementList blockquote {
   margin: 1rem 0 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  line-height: 1.8;
+  font-size: var(--text-body);
+  line-height: 1.9;
 }
 
 .documentList li {
@@ -166,7 +158,7 @@
 }
 
 .documentList article {
-  padding: 1.5rem;
+  padding: 1.5rem 0 1.5rem 1.25rem;
 }
 
 .documentList article > p {
@@ -177,8 +169,8 @@
 .documentList article > div {
   margin-top: 1rem;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  line-height: 1.8;
+  font-size: var(--text-body);
+  line-height: 1.9;
   white-space: pre-line;
 }
 
